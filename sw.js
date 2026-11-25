@@ -1,6 +1,6 @@
 // © 2026 TinyRoom Studio. Alle Rechte vorbehalten.
 // Netz zuerst (für Updates), ohne Netz aus dem Speicher.
-const CACHE = "meinweg-alles-23";
+const CACHE = "meinweg-alles-25";
 const FILES = ["./", "index.html", "alltag.js", "manifest.webmanifest",
   "icon-180.png", "icon-192.png", "icon-512.png"];
 self.addEventListener("install", event => {
@@ -15,7 +15,7 @@ self.addEventListener("activate", event => {
 self.addEventListener("fetch", event => {
   const request = event.request;
   if (request.method !== "GET" || new URL(request.url).origin !== location.origin) return;
-  event.respondWith(fetch(request).then(response => {
+  event.respondWith(fetch(request, { cache: "no-cache" }).then(response => {
     if (response.ok) {
       const copy = response.clone();
       caches.open(CACHE).then(c => c.put(request, copy));

@@ -340,16 +340,19 @@ function cleanQuest(data) {
 }
 
 // ================= Sportplan =================
-// Stellt aus Alter, Erfahrung, Ziel, Zeit, Ort und Beschwerden einen Wochenplan zusammen.
-// Bewusst ohne Gewicht, Kalorien oder Körpermaße. Mengen sind Richtwerte (Annahmen).
+// Stellt aus Körperdaten, Erfahrung, Ziel, Zeit, Ort, Geräten und Beschwerden einen Wochenplan zusammen.
+// Mengen sind Richtwerte (Annahmen). Es gibt bewusst keine Abnehm- oder Diätziele.
 const SPORT_OPTIONS = {
   age: { kid: "13–15", teen: "16–17", adult: "18–39", mid: "40–59", senior: "60 oder älter" },
   level: { 1: "Ich fange gerade an", 2: "Ich bewege mich ab und zu", 3: "Ich trainiere regelmäßig" },
-  goal: { move: "Mich mehr bewegen", endurance: "Mehr Ausdauer", strength: "Kräftiger werden",
+  goal: { move: "Mich mehr bewegen", endurance: "Mehr Ausdauer", strength: "Kraft und Muskeln aufbauen",
     flex: "Beweglicher werden", all: "Rundum fit" },
-  minutes: { 10: "10 Minuten", 20: "20 Minuten", 30: "30 Minuten", 45: "45 Minuten" },
+  minutes: { 10: "10 Minuten", 20: "20 Minuten", 30: "30 Minuten", 45: "45 Minuten", 60: "60 Minuten" },
   place: { home: "Zu Hause", out: "Draußen", gym: "Im Fitnessstudio" },
 };
+const SEXES = { f: "Weiblich", m: "Männlich", x: "Keine Angabe" };
+const EQUIPMENT = { dumbbell: "Kurzhanteln", band: "Widerstandsband", bar: "Klimmzugstange", kettlebell: "Kettlebell",
+  bench: "Bank oder Stufe", rope: "Springseil", bike: "Heimtrainer (Ergometer)" };
 const SPORT_LIMITS = { knee: "Knie", back: "Rücken", shoulder: "Schulter oder Handgelenk", quiet: "Keine Sprünge, leise" };
 const SPORT_DAYS = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"];
 const SPORT_TYPES = { kraft: ["Kraft", "💪"], ausdauer: ["Ausdauer", "🏃"], beweg: ["Beweglichkeit", "🧘"], mix: ["Mix", "⚡"] };
@@ -357,66 +360,149 @@ const SPORT_PATTERN = { move: ["mix", "ausdauer", "beweg"], endurance: ["ausdaue
   strength: ["kraft", "ausdauer", "kraft", "beweg"], flex: ["beweg", "mix", "beweg", "ausdauer"],
   all: ["kraft", "ausdauer", "beweg", "mix"] };
 
-// [Name, So geht's, Bereich, Einheit, Menge, Orte, nicht bei, ab Erfahrung]
-const ex = (name, how, area, unit, amount, places = "home out gym", avoid = "", min = 1) =>
-  ({ name, how, area, unit, amount, places: places.split(" "), avoid: avoid.split(" "), min });
+// [Name, So geht's, Bereich, Einheit, Menge, Bewegungsbild, Orte, nicht bei, ab Erfahrung, Gerät]
+const ex = (name, how, area, unit, amount, pose, places = "home out gym", avoid = "", min = 1, need = "") =>
+  ({ name, how, area, unit, amount, pose, places: places.split(" "), avoid: avoid.split(" "), min, need });
+const gear = (need, name, how, area, unit, amount, pose, avoid = "", min = 1) =>
+  ex(name, how, area, unit, amount, pose, "home gym", avoid, min, need);
 const EXERCISES = [
-  ex("Auf der Stelle marschieren", "Knie locker heben, Arme mitschwingen.", "warm", "sec", 60),
-  ex("Schultern und Arme kreisen", "Erst klein, dann groß, vorwärts und rückwärts.", "warm", "sec", 40, "home out gym", "shoulder"),
-  ex("Hüfte kreisen", "Hände an die Hüfte, große ruhige Kreise.", "warm", "sec", 40),
-  ex("Seitschritte", "Zügig nach links und rechts treten.", "warm", "sec", 45),
-  ex("Hampelmann", "Locker springen, weich landen.", "warm", "sec", 30, "home out gym", "knee quiet shoulder back"),
+  ex("Auf der Stelle marschieren", "Knie locker heben, Arme gegengleich mitschwingen.", "warm", "sec", 60, "walk"),
+  ex("Schultern und Arme kreisen", "Erst klein, dann groß, vorwärts und rückwärts.", "warm", "sec", 40, "arms", "home out gym", "shoulder"),
+  ex("Hüfte kreisen", "Hände an die Hüfte, große ruhige Kreise in beide Richtungen.", "warm", "sec", 40, "stretch"),
+  ex("Seitschritte", "Zügig nach links und rechts treten, Knie leicht gebeugt.", "warm", "sec", 45, "walk"),
+  ex("Hampelmann", "Locker springen, auf den Fußballen weich landen.", "warm", "sec", 30, "jump", "home out gym", "knee quiet shoulder back"),
 
-  ex("Kniebeugen zum Stuhl", "Po nach hinten, kurz den Stuhl berühren, aufstehen.", "legs", "reps", 10, "home", "knee"),
-  ex("Kniebeugen", "Füße schulterbreit, Rücken lang, so tief wie angenehm.", "legs", "reps", 12, "home out gym", "knee", 2),
-  ex("Ausfallschritte rückwärts", "Großer Schritt zurück, hochdrücken, Seite wechseln.", "legs", "reps", 8, "home out gym", "knee", 2),
-  ex("Beckenheben", "Auf dem Rücken, Füße aufstellen, Po anheben und senken.", "legs", "reps", 12),
-  ex("Wadenheben", "Auf die Zehenspitzen und langsam zurück. Halt dich fest, wenn nötig.", "legs", "reps", 15),
-  ex("Beinpresse", "Leichtes Gewicht, Knie nicht ganz durchstrecken.", "legs", "reps", 12, "gym", "knee"),
-  ex("Seitliches Beinheben", "In Seitlage das obere Bein langsam heben.", "legs", "reps", 10, "home gym"),
+  ex("Kniebeugen zum Stuhl", "Po nach hinten schieben, kurz den Stuhl berühren, aufstehen.", "legs", "reps", 10, "squat", "home", "knee"),
+  ex("Kniebeugen", "Füße schulterbreit, Brust aufrecht, so tief wie angenehm.", "legs", "reps", 12, "squat", "home out gym", "knee", 2),
+  ex("Ausfallschritte rückwärts", "Großer Schritt zurück, beide Knie beugen, hochdrücken, Seite wechseln.", "legs", "reps", 8, "lunge", "home out gym", "knee", 2),
+  ex("Beckenheben", "Rückenlage, Füße aufstellen, Po anheben, oben kurz halten.", "legs", "reps", 12, "bridge"),
+  ex("Wadenheben", "Langsam auf die Zehenspitzen und zurück. Halt dich fest, wenn nötig.", "legs", "reps", 15, "calf"),
+  ex("Beinpresse", "Leichtes Gewicht, Knie nicht ganz durchstrecken.", "legs", "reps", 12, "squat", "gym", "knee"),
+  ex("Seitliches Beinheben", "In Seitlage das obere Bein gestreckt langsam heben und senken.", "legs", "reps", 10, "bridge", "home gym"),
+  gear("dumbbell", "Kniebeuge mit Hantel vor der Brust", "Hantel mit beiden Händen halten, tief beugen, Rücken lang.", "legs", "reps", 10, "squat", "knee", 2),
+  gear("dumbbell", "Kreuzheben mit Hanteln", "Knie leicht gebeugt, Hüfte nach hinten, Rücken gerade, wieder aufrichten.", "legs", "reps", 10, "hinge", "back", 2),
+  gear("kettlebell", "Kreuzheben mit Kettlebell", "Kugel zwischen den Füßen, Rücken gerade, aus Beinen und Hüfte heben.", "legs", "reps", 10, "hinge", "back"),
+  gear("kettlebell", "Kettlebell-Schwung", "Schwung kommt aus der Hüfte, Arme führen nur. Erst mit leichtem Gewicht.", "legs", "reps", 12, "hinge", "back shoulder quiet", 3),
+  gear("band", "Seitschritte mit Band", "Band um die Beine, leicht in die Hocke, kleine Schritte zur Seite.", "legs", "reps", 12, "squat", "knee"),
+  gear("bench", "Aufsteigen auf eine Stufe", "Ganzen Fuß aufsetzen, hochdrücken, kontrolliert zurück, Seite wechseln.", "legs", "reps", 10, "lunge", "knee"),
 
-  ex("Wand-Liegestütze", "Hände an die Wand, Körper gerade, Arme beugen.", "push", "reps", 10, "home", "shoulder"),
-  ex("Liegestütze an Bank oder Tisch", "Stabile Kante, Körper gerade halten.", "push", "reps", 8, "home out", "shoulder", 2),
-  ex("Liegestütze", "Am Boden, bei Bedarf auf den Knien.", "push", "reps", 8, "home out gym", "shoulder", 3),
-  ex("Brustpresse am Gerät", "Leichtes Gewicht, ruhig drücken und zurück.", "push", "reps", 12, "gym", "shoulder"),
+  ex("Wand-Liegestütze", "Hände an die Wand, Körper gerade wie ein Brett, Arme beugen.", "push", "reps", 10, "push", "home", "shoulder"),
+  ex("Liegestütze an Bank oder Tisch", "Stabile Kante greifen, Körper gerade, Brust Richtung Kante.", "push", "reps", 8, "push", "home out", "shoulder", 2),
+  ex("Liegestütze", "Am Boden, Bauch fest. Bei Bedarf auf den Knien.", "push", "reps", 8, "push", "home out gym", "shoulder", 3),
+  ex("Brustpresse am Gerät", "Leichtes Gewicht, ruhig drücken und langsam zurück.", "push", "reps", 12, "press", "gym", "shoulder"),
+  gear("dumbbell", "Schulterdrücken mit Hanteln", "Hanteln neben den Schultern, gerade nach oben drücken, Bauch fest.", "push", "reps", 10, "press", "shoulder"),
+  gear("dumbbell", "Bodendrücken mit Hanteln", "Rückenlage, Oberarme berühren den Boden, nach oben drücken.", "push", "reps", 10, "press", "shoulder"),
+  gear("band", "Brustdrücken mit Band", "Band hinter dem Rücken, Arme nach vorn strecken, langsam zurück.", "push", "reps", 12, "press", "shoulder"),
+  gear("bench", "Trizeps-Stütz an der Bank", "Hände an die Kante, Ellbogen nach hinten beugen. Bank darf nicht rutschen.", "push", "reps", 8, "push", "shoulder", 3),
 
-  ex("Schulterblätter zusammenziehen", "Aufrecht stehen, Schultern nach hinten, 2 Sekunden halten.", "pull", "reps", 12),
-  ex("Rudern mit Flaschen", "Leicht vorgebeugt, Ellbogen nach hinten ziehen.", "pull", "reps", 10, "home", "back shoulder"),
-  ex("Latzug am Gerät", "Stange zur Brust ziehen, langsam zurück.", "pull", "reps", 12, "gym", "shoulder"),
-  ex("Rudern am Gerät", "Aufrecht sitzen, Griffe zum Bauch ziehen.", "pull", "reps", 12, "gym", "back shoulder"),
+  ex("Schulterblätter zusammenziehen", "Aufrecht stehen, Schultern nach hinten unten, 2 Sekunden halten.", "pull", "reps", 12, "pull"),
+  ex("Rudern mit Flaschen", "Leicht vorgebeugt, Ellbogen eng nach hinten ziehen.", "pull", "reps", 10, "pull", "home", "back shoulder"),
+  ex("Latzug am Gerät", "Stange zur Brust ziehen, langsam zurück.", "pull", "reps", 12, "pull", "gym", "shoulder"),
+  ex("Rudern am Gerät", "Aufrecht sitzen, Griffe zum Bauch ziehen.", "pull", "reps", 12, "pull", "gym", "back shoulder"),
+  gear("dumbbell", "Einarmiges Rudern", "Eine Hand abstützen, Hantel zur Hüfte ziehen, dann Seite wechseln.", "pull", "reps", 10, "pull", "back shoulder"),
+  gear("dumbbell", "Armbeugen mit Hanteln", "Ellbogen am Körper, Hanteln heben, langsam senken.", "pull", "reps", 12, "pull", "shoulder"),
+  gear("band", "Rudern mit Band", "Band um die Füße oder an der Tür sichern, Ellbogen nach hinten.", "pull", "reps", 12, "pull", "shoulder"),
+  gear("band", "Band auseinanderziehen", "Arme vorn gestreckt, Band zur Seite auseinanderziehen.", "pull", "reps", 12, "arms", "shoulder"),
+  gear("bar", "An der Stange hängen", "Fest greifen, Schultern aktiv, ruhig atmen. Stange vorher prüfen.", "pull", "sec", 20, "hang", "shoulder", 2),
+  gear("bar", "Klimmzug mit Hilfe", "Mit Band oder Fußunterstützung hochziehen, langsam ablassen.", "pull", "reps", 5, "hang", "shoulder", 3),
 
-  ex("Unterarmstütz", "Auf Unterarmen und Knien oder Zehen, Bauch anspannen.", "core", "sec", 20, "home out gym", "shoulder back"),
-  ex("Vierfüßler: Arm und Bein strecken", "Gegengleich ausstrecken, Hüfte ruhig halten.", "core", "reps", 8, "home gym", "shoulder"),
-  ex("Toter Käfer", "Rückenlage, Arm und Gegenbein langsam senken, Rücken bleibt am Boden.", "core", "reps", 8, "home gym"),
-  ex("Standwaage mit Festhalten", "Auf einem Bein stehen, Seite wechseln.", "core", "sec", 20),
+  ex("Unterarmstütz", "Auf Unterarmen und Knien oder Zehen, Körper gerade, weiteratmen.", "core", "sec", 20, "plank", "home out gym", "shoulder back"),
+  ex("Seitstütz auf den Knien", "Seitlich auf den Unterarm stützen, Hüfte anheben, Seite wechseln.", "core", "sec", 15, "plank", "home gym", "shoulder", 2),
+  ex("Vierfüßler: Arm und Bein strecken", "Gegengleich lang ausstrecken, Hüfte ruhig halten.", "core", "reps", 8, "plank", "home gym", "shoulder"),
+  ex("Toter Käfer", "Rückenlage, Arm und Gegenbein langsam senken, unterer Rücken bleibt am Boden.", "core", "reps", 8, "bug", "home gym"),
+  ex("Standwaage mit Festhalten", "Auf einem Bein stehen, Oberkörper leicht vor, Seite wechseln.", "core", "sec", 20, "balance"),
 
-  ex("Zügig gehen", "So schnell, dass Reden noch geht.", "cardio", "min", 1, "home out gym"),
-  ex("Gehen und locker laufen", "1 Minute laufen, 2 Minuten gehen, wiederholen.", "cardio", "min", 1, "out gym", "knee quiet", 1),
-  ex("Locker joggen", "Langsames Tempo, bei dem Reden noch geht.", "cardio", "min", 1, "out gym", "knee quiet", 3),
-  ex("Radfahren", "Gleichmäßig treten, draußen mit Helm.", "cardio", "min", 1, "out gym"),
-  ex("Crosstrainer", "Gleichmäßig, mit leichtem Widerstand.", "cardio", "min", 1, "gym"),
-  ex("Tanzen", "Lieblingslieder an und einfach bewegen.", "cardio", "min", 1, "home", "knee"),
-  ex("Treppen steigen", "Ruhig hinauf, am Geländer hinunter.", "cardio", "min", 1, "home out", "knee", 2),
+  ex("Zügig gehen", "So schnell, dass Reden noch geht.", "cardio", "min", 1, "walk"),
+  ex("Gehen und locker laufen", "1 Minute laufen, 2 Minuten gehen, wiederholen.", "cardio", "min", 1, "run", "out gym", "knee quiet", 1),
+  ex("Locker joggen", "Langsames Tempo, bei dem Reden noch geht.", "cardio", "min", 1, "run", "out gym", "knee quiet", 3),
+  ex("Radfahren", "Gleichmäßig treten, draußen mit Helm.", "cardio", "min", 1, "bike", "out gym"),
+  ex("Crosstrainer", "Gleichmäßig, mit leichtem Widerstand.", "cardio", "min", 1, "run", "gym"),
+  ex("Tanzen", "Lieblingslieder an und einfach bewegen.", "cardio", "min", 1, "jump", "home", "knee"),
+  ex("Schattenboxen", "Locker auf den Füßen, abwechselnd nach vorn boxen, Arme nie ganz durchstrecken.", "cardio", "min", 1, "press", "home out", "shoulder"),
+  ex("Treppen steigen", "Ruhig hinauf, am Geländer hinunter.", "cardio", "min", 1, "lunge", "home out", "knee", 2),
+  gear("rope", "Seilspringen", "Kleine Sprünge aus den Fußgelenken, bei Bedarf Pausen.", "cardio", "min", 1, "jump", "knee quiet", 2),
+  gear("bike", "Heimtrainer fahren", "Sattel auf Hüfthöhe, gleichmäßig treten.", "cardio", "min", 1, "bike"),
 
-  ex("Katze und Kuh", "Im Vierfüßler den Rücken langsam rund und wieder lang machen.", "flex", "sec", 40, "home gym", "shoulder"),
-  ex("Brust öffnen", "Hände hinter dem Rücken, Brustbein heben.", "flex", "sec", 30, "home out gym", "shoulder"),
-  ex("Nacken sanft dehnen", "Ohr Richtung Schulter, ohne zu ziehen. Beide Seiten.", "flex", "sec", 30),
-  ex("Hüftbeuger dehnen", "Schrittstellung, Becken sanft nach vorn.", "flex", "sec", 30),
-  ex("Oberschenkel hinten", "Ferse aufstellen, mit langem Rücken leicht vorbeugen.", "flex", "sec", 30),
-  ex("Waden dehnen", "An der Wand abstützen, hinteres Bein gestreckt.", "flex", "sec", 30),
-  ex("Seitneigen", "Arm nach oben, sanft zur Seite neigen. Beide Seiten.", "flex", "sec", 30),
-  ex("Ruhig atmen", "4 Sekunden ein, 6 Sekunden aus.", "flex", "sec", 60),
+  ex("Katze und Kuh", "Im Vierfüßler den Rücken langsam rund und wieder lang machen.", "flex", "sec", 40, "plank", "home gym", "shoulder"),
+  ex("Brust öffnen", "Hände hinter dem Rücken, Brustbein heben.", "flex", "sec", 30, "arms", "home out gym", "shoulder"),
+  ex("Nacken sanft dehnen", "Ohr Richtung Schulter, ohne zu ziehen. Beide Seiten.", "flex", "sec", 30, "stretch"),
+  ex("Hüftbeuger dehnen", "Schrittstellung, Becken sanft nach vorn.", "flex", "sec", 30, "lunge"),
+  ex("Oberschenkel hinten", "Ferse aufstellen, mit langem Rücken leicht vorbeugen.", "flex", "sec", 30, "hinge"),
+  ex("Waden dehnen", "An der Wand abstützen, hinteres Bein gestreckt, Ferse unten.", "flex", "sec", 30, "lunge"),
+  ex("Seitneigen", "Arm nach oben, sanft zur Seite neigen. Beide Seiten.", "flex", "sec", 30, "stretch"),
+  ex("Ruhig atmen", "4 Sekunden ein, 6 Sekunden aus.", "flex", "sec", 60, "stretch"),
 ];
+
+// ---------- Bewegungsbilder: Strichfigur zwischen zwei Haltungen ----------
+// Punkte: Kopf, Hals, Hüfte, Ellbogen1, Hand1, Ellbogen2, Hand2, Knie1, Fuß1, Knie2, Fuß2
+const STAND = "50,16 50,26 50,52 40,38 36,50 60,38 64,50 44,70 42,90 56,70 58,90";
+const POSES = {
+  squat: [STAND, "46,32 48,41 58,64 60,48 74,48 62,50 76,52 38,70 42,90 48,72 58,90"],
+  lunge: [STAND, "50,26 50,36 52,60 44,48 46,60 60,48 62,60 34,70 32,90 66,80 82,88"],
+  calf: [STAND, "50,10 50,20 50,46 40,32 36,44 60,32 64,44 45,66 44,84 55,66 56,84"],
+  hinge: [STAND, "26,40 34,44 60,52 38,58 40,72 44,58 46,72 56,72 54,90 66,72 66,90"],
+  bridge: ["14,80 24,80 52,82 30,86 42,88 30,86 42,88 66,64 76,88 68,66 80,88",
+    "14,82 24,80 52,62 30,86 42,88 30,86 42,88 68,58 76,88 70,60 80,88"],
+  push: ["24,44 33,50 56,66 36,66 36,86 40,68 42,86 70,76 84,86 72,76 86,88",
+    "24,62 33,67 56,76 24,74 36,86 30,76 42,86 70,81 84,86 72,82 86,88"],
+  plank: ["22,58 32,62 58,68 30,82 44,84 34,82 48,84 72,75 86,84 74,76 88,86",
+    "22,55 32,59 58,63 30,82 44,84 34,82 48,84 72,72 86,84 74,73 88,86"],
+  press: ["50,16 50,26 50,52 34,34 36,22 66,34 64,22 44,70 42,90 56,70 58,90",
+    "50,16 50,26 50,52 40,14 40,2 60,14 60,2 44,70 42,90 56,70 58,90"],
+  pull: ["44,22 46,32 54,56 56,44 70,52 60,46 74,54 46,72 46,90 60,72 62,90",
+    "44,22 46,32 54,56 62,38 50,46 66,40 54,48 46,72 46,90 60,72 62,90"],
+  arms: ["50,16 50,26 50,52 38,28 26,28 62,28 74,28 44,70 42,90 56,70 58,90",
+    "50,16 50,26 50,52 36,18 30,6 64,18 70,6 44,70 42,90 56,70 58,90"],
+  hang: ["50,38 50,46 50,70 38,28 40,8 62,28 60,8 46,82 44,94 54,82 56,94",
+    "50,18 50,28 50,54 32,32 40,8 68,32 60,8 44,68 48,80 56,68 52,80"],
+  bug: ["16,76 26,78 54,80 30,60 32,44 34,62 38,46 62,58 78,60 66,60 82,62",
+    "16,76 26,78 54,80 14,66 4,62 34,62 38,46 62,58 78,60 76,72 92,76"],
+  balance: [STAND, "24,34 33,38 56,50 24,50 18,60 40,54 42,68 56,70 54,90 74,48 90,44"],
+  walk: ["50,16 50,26 50,52 42,38 44,52 60,38 66,46 40,68 30,86 60,70 62,90",
+    "50,16 50,26 50,52 40,38 34,46 58,38 56,52 40,70 38,90 60,68 70,86"],
+  run: ["54,14 52,24 46,50 40,34 52,40 64,36 70,24 30,60 18,72 66,60 66,82",
+    "54,16 52,26 46,52 62,38 72,28 40,36 30,46 62,62 76,70 46,72 28,80"],
+  jump: [STAND, "50,10 50,20 50,46 34,18 28,4 66,18 72,4 36,64 28,82 64,64 72,82"],
+  bike: ["40,24 44,34 56,58 52,48 70,46 54,50 72,48 68,60 60,76 46,70 56,88",
+    "40,24 44,34 56,58 52,48 70,46 54,50 72,48 50,70 56,88 68,62 62,76"],
+  stretch: ["46,18 49,27 50,52 38,34 34,48 58,16 46,6 44,70 42,90 56,70 58,90",
+    "54,18 51,27 50,52 42,16 54,6 62,34 66,48 44,70 42,90 56,70 58,90"],
+};
+function figure(pose, still) {
+  const frames = (POSES[pose] || POSES.walk).map(text => text.split(" ").map(p => p.split(",").map(Number)));
+  const body = ([, neck, hip, e1, h1, e2, h2, k1, f1, k2, f2]) =>
+    `M${neck}L${hip}M${neck}L${e1}L${h1}M${neck}L${e2}L${h2}M${hip}L${k1}L${f1}M${hip}L${k2}L${f2}`;
+  const move = (attribute, values) => still ? "" :
+    `<animate attributeName="${attribute}" values="${values.join(";")};${values[0]}" dur="2.4s" repeatCount="indefinite" calcMode="spline" keyTimes="0;.5;1" keySplines=".4 0 .6 1;.4 0 .6 1"/>`;
+  const box = el("div", { className: "figure" });
+  box.innerHTML = `<svg viewBox="-4 -6 108 108" role="img" aria-label="Bewegungsbild"><line class="floor" x1="2" y1="96" x2="98" y2="96"/>
+    <path d="${body(frames[0])}">${move("d", frames.map(body))}</path>
+    <circle cx="${frames[0][0][0]}" cy="${frames[0][0][1]}" r="8">${move("cx", frames.map(f => f[0][0]))}${move("cy", frames.map(f => f[0][1]))}</circle></svg>`;   // feste Zeichnungen
+  return box;
+}
+const TIPS = { squat: "Knie zeigen in Richtung der Zehen, Fersen bleiben am Boden.", lunge: "Oberkörper aufrecht, vorderes Knie bleibt stabil.",
+  hinge: "Der Rücken bleibt gerade. Wird er rund, nimm weniger Gewicht.", push: "Hüfte nicht durchhängen lassen.",
+  plank: "Nicht ins Hohlkreuz fallen und weiteratmen.", press: "Nicht ins Hohlkreuz lehnen, beim Drücken ausatmen.",
+  pull: "Schultern nicht zu den Ohren ziehen.", hang: "Nicht ruckartig, immer kontrolliert ablassen.",
+  bridge: "Aus dem Po drücken, nicht aus dem unteren Rücken.", bug: "Langsam bewegen, der Rücken bleibt unten.",
+  stretch: "Nur dehnen, bis es zieht, nie bis es schmerzt." };
+
+const ageGroup = years => years < 16 ? "kid" : years < 18 ? "teen" : years < 40 ? "adult" : years < 60 ? "mid" : "senior";
+const within = (value, min, max) => { const n = Number(String(value ?? "").replace(",", ".")); return n >= min && n <= max ? n : 0; };
 
 function cleanSport(data) {
   const p = data?.profile;
   const pick = (key, value) => Object.hasOwn(SPORT_OPTIONS[key], value) ? String(value) : "";
+  const many = (map, list) => [...new Set((Array.isArray(list) ? list : []).filter(x => Object.hasOwn(map, x)))];
   let profile = null;
   if (p) {
-    profile = { age: pick("age", p.age), level: pick("level", p.level), goal: pick("goal", p.goal),
-      minutes: pick("minutes", p.minutes), place: pick("place", p.place),
+    const years = Math.round(within(p.ageYears, 13, 100));
+    profile = { age: years ? ageGroup(years) : pick("age", p.age), ageYears: years, weight: within(p.weight, 30, 250),
+      height: within(p.height, 120, 230), sex: Object.hasOwn(SEXES, p.sex) ? p.sex : "x", level: pick("level", p.level),
+      goal: pick("goal", p.goal), minutes: pick("minutes", p.minutes), place: pick("place", p.place),
       days: [...new Set((Array.isArray(p.days) ? p.days : []).filter(d => Number.isInteger(d) && d >= 0 && d < 7))].sort(),
-      limits: (Array.isArray(p.limits) ? p.limits : []).filter(l => Object.hasOwn(SPORT_LIMITS, l)) };
+      equipment: many(EQUIPMENT, p.equipment), limits: many(SPORT_LIMITS, p.limits),
+      time: /^([01]\d|2[0-3]):[0-5]\d$/.test(p.time) ? p.time : "17:00" };
     if (!profile.age || !profile.level || !profile.goal || !profile.minutes || !profile.place || !profile.days.length) profile = null;
   }
   return { profile, adjust: Math.max(-3, Math.min(5, Math.round(Number(data?.adjust) || 0))),
@@ -428,7 +514,7 @@ function cleanSport(data) {
 
 const weekIndex = (date = new Date()) => (date.getDay() + 6) % 7;   // Montag = 0
 // Gleiche Auswahl innerhalb einer Woche, nächste Woche Abwechslung.
-const weekNumber = () => Math.floor((Date.now() / 864e5 + 3) / 7);
+const weekNumber = (date = new Date()) => Math.floor((date.getTime() / 864e5 + 3) / 7);
 
 function weekPlan(profile) {
   const pattern = SPORT_PATTERN[profile.goal];
@@ -442,26 +528,31 @@ function weekPlan(profile) {
   });
 }
 
-function session(profile, type, slot, adjust, tired) {
+function session(profile, type, slot, adjust, tired, date = new Date()) {
   const level = Number(profile.level), young = profile.age === "kid", older = profile.age === "senior";
   const minutes = tired ? Math.max(10, Math.round(Number(profile.minutes) * .6)) : Number(profile.minutes);
   const limits = [...profile.limits, ...(older ? ["quiet"] : [])];
   // Unter 16 im Studio: nur Übungen mit dem eigenen Körpergewicht.
   const place = profile.place === "gym" && young ? "home" : profile.place;
-  const pool = area => EXERCISES.filter(e => e.area === area && e.min <= level
+  const owned = (profile.equipment || []).filter(k => !(young && (k === "dumbbell" || k === "kettlebell")));
+  const fits = area => EXERCISES.filter(e => e.area === area && e.min <= level
     && (e.places.includes(place) || (profile.place === "gym" && e.places.includes("gym") && !young))
+    && (!e.need || (profile.place === "home" && owned.includes(e.need)))
     && !e.avoid.some(a => limits.includes(a)));
+  // Übungen mit deinen Geräten kommen zuerst, jede Gruppe wechselt wöchentlich durch.
   const take = (area, count, offset = 0) => {
-    const list = pool(area), start = weekNumber() + slot + offset;
-    return Array.from({ length: Math.min(count, list.length) }, (_, i) => list[(start + i) % list.length]);
+    const turn = list => list.map((_, i) => list[(weekNumber(date) + slot + offset + i) % list.length]);
+    const all = fits(area);
+    return [...turn(all.filter(e => e.need)), ...turn(all.filter(e => !e.need))].slice(0, count);
   };
   const factor = (1 + adjust * .1) * ({ 1: .85, 2: 1, 3: 1.15 }[level]) * (tired ? .75 : 1) * (older ? .85 : 1);
   const warm = take("warm", minutes <= 10 ? 1 : 2).map(e => ({ ...e, part: "Aufwärmen", sets: 1, value: e.amount }));
-  const cool = take("flex", minutes <= 10 ? 1 : 2, 3).map(e => ({ ...e, part: "Ausklang", sets: 1, value: e.amount }));
+  const cool = take("flex", minutes <= 10 ? 1 : minutes >= 45 ? 3 : 2, 3).map(e => ({ ...e, part: "Ausklang", sets: 1, value: e.amount }));
   const main = [];
   // Keine Übung doppelt: gibt es für einen Bereich keine weitere, entfällt der Platz.
   const strength = (areas, sets) => areas.forEach((area, i) => {
-    const e = take(area, 99, i).find(x => !main.some(m => m.name === x.name));
+    const list = take(area, 99, i);
+    const e = list.find(x => !main.some(m => m.name === x.name));
     if (e) main.push({ ...e, part: "Hauptteil", sets, value: Math.max(e.unit === "sec" ? 10 : 4, Math.round(e.amount * factor)) });
   });
   const cardio = time => take("cardio", 1).forEach(e => main.push(
@@ -469,11 +560,11 @@ function session(profile, type, slot, adjust, tired) {
   const mainTime = Math.max(5, minutes - (minutes <= 10 ? 3 : 7));
   const sets = tired || level === 1 || minutes <= 10 ? (minutes >= 30 ? 2 : 1) : minutes >= 30 ? 3 : 2;
   if (type === "kraft") strength(minutes <= 10 ? ["legs", "push", "core"] : minutes <= 20 ? ["legs", "push", "pull", "core"]
-    : ["legs", "push", "pull", "core", "legs"], sets);
+    : minutes <= 30 ? ["legs", "push", "pull", "core", "legs"] : ["legs", "push", "pull", "core", "legs", "push", "pull"], sets);
   else if (type === "ausdauer") cardio(mainTime);
   else if (type === "beweg") take("flex", Math.min(7, Math.max(3, Math.round(mainTime / 3))))
     .forEach(e => main.push({ ...e, part: "Hauptteil", sets: minutes >= 30 ? 2 : 1, value: e.amount }));
-  else { strength(["legs", "core"], minutes >= 30 ? 2 : 1); cardio(mainTime * .6); }
+  else { strength(minutes >= 45 ? ["legs", "push", "pull", "core"] : ["legs", "core"], minutes >= 30 ? 2 : 1); cardio(mainTime * .6); }
   if (older && type !== "beweg") main.push(...EXERCISES.filter(e => e.name.startsWith("Standwaage"))
     .filter(e => !main.some(m => m.name === e.name)).map(e => ({ ...e, part: "Gleichgewicht", sets: 1, value: e.amount })));
   const used = new Set(main.map(e => e.name));
@@ -486,51 +577,69 @@ const amountText = e => (e.sets > 1 ? `${e.sets} × ` : "")
 let sportForm = null, sportRun = null;
 
 function sportQuestions() {
-  const f = sportForm, parts = [];
-  const steps = [["age", "Wie alt bist du?"], ["level", "Wie aktiv bist du gerade?"], ["goal", "Was ist dir wichtig?"],
-    ["days", "An welchen Tagen hast du Zeit?"], ["minutes", "Wie lange pro Training?"], ["place", "Wo trainierst du?"],
+  const f = sportForm, parts = [], d = f.data;
+  const steps = [["body", "Erzähl mir von dir"], ["level", "Wie aktiv bist du gerade?"], ["goal", "Was ist dein Ziel beim Trainieren?"],
+    ["days", "Wie oft und an welchen Tagen?"], ["minutes", "Wie lange pro Training?"], ["place", "Wo trainierst du?"],
+    ...(d.place === "home" ? [["equipment", "Welche Geräte hast du zu Hause?"]] : []),
     ["limits", "Worauf soll der Plan Rücksicht nehmen?"], ["health", "Kurzer Gesundheits-Check"]];
   const [key, question] = steps[f.step];
   const warn = el("p", { className: "sub", role: "status" });
   parts.push(button("Zurück", () => { if (f.step === 0) sportForm = null; else f.step--; render(true); }, "quiet"),
     ...title(question, `Frage ${f.step + 1} von ${steps.length}`),
     el("div", { className: "dots" }, ...steps.map((_, i) => el("i", { className: i <= f.step ? "on" : "" }))));
-  const choose = (label, selected, run) => {
-    const b = button(label, run, "btn alt pick"); b.setAttribute("aria-pressed", selected); return b;
+  const choose = (text, selected, run) => {
+    const b = button((selected ? "✓ " : "") + text, run, "btn alt pick"); b.setAttribute("aria-pressed", selected); return b;
   };
+  const number = (name, id, min, max) => {
+    const input = el("input", { type: "number", inputMode: "decimal", min, max, step: "any", value: d[id] || "" });
+    input.addEventListener("input", () => { d[id] = input.value; });
+    return field(name, input);
+  };
+  const flip = (list, value) => () => { d[list] = d[list].includes(value) ? d[list].filter(x => x !== value) : [...d[list], value]; render(); };
   let controls;
-  if (key === "days") controls = [el("div", { className: "days" }, ...SPORT_DAYS.map((name, i) => {
-    const b = button(name, () => { f.data.days = f.data.days.includes(i) ? f.data.days.filter(d => d !== i) : [...f.data.days, i]; render(); }, "");
-    b.setAttribute("aria-pressed", f.data.days.includes(i)); return b;
-  })), small("Mindestens ein Tag in der Woche bleibt frei.")];
-  else if (key === "limits") controls = [...Object.entries(SPORT_LIMITS).map(([value, label]) =>
-    choose(label, f.data.limits.includes(value), () => {
-      f.data.limits = f.data.limits.includes(value) ? f.data.limits.filter(l => l !== value) : [...f.data.limits, value]; render();
-    })), small("Mehrere möglich. Trifft nichts zu, tippe einfach auf „Weiter“.")];
+  if (key === "body") {
+    const sex = select(SEXES, d.sex || "x");
+    sex.addEventListener("change", () => { d.sex = sex.value; });
+    controls = [number("Wie alt bist du? (Jahre)", "ageYears", 13, 100), number("Wie groß bist du? (cm)", "height", 120, 230),
+      number("Wie viel wiegst du? (kg)", "weight", 30, 250), field("Geschlecht (nur für den Kalorien-Richtwert)", sex),
+      small("Die Angaben bleiben auf deinem Gerät.")];
+  } else if (key === "days") controls = [el("div", { className: "days" }, ...SPORT_DAYS.map((name, i) => {
+    const b = button(name, () => { d.days = d.days.includes(i) ? d.days.filter(x => x !== i) : [...d.days, i]; render(); }, "");
+    b.setAttribute("aria-pressed", d.days.includes(i)); return b;
+  })), small(`${d.days.length}× pro Woche gewählt. Mindestens ein Tag bleibt frei.`)];
+  else if (key === "equipment") controls = [...Object.entries(EQUIPMENT).map(([value, text]) =>
+    choose(text, d.equipment.includes(value), flip("equipment", value))), small("Mehrere möglich. Ohne Geräte planst du mit dem eigenen Körper.")];
+  else if (key === "limits") controls = [...Object.entries(SPORT_LIMITS).map(([value, text]) =>
+    choose(text, d.limits.includes(value), flip("limits", value))), small("Mehrere möglich. Trifft nichts zu, tippe einfach auf „Weiter“.")];
   else if (key === "health") controls = [el("p", { textContent: "Trifft etwas davon zu: Herzprobleme, Schmerzen in der Brust, Schwindel oder Ohnmacht bei Anstrengung, eine frische Verletzung oder Operation, Schwangerschaft, oder jemand Ärztliches hat dir vom Sport abgeraten?" }),
     choose("Nein, nichts davon", f.health === "no", () => { f.health = "no"; render(); }),
     choose("Ja, aber ich habe ärztlich das Okay", f.health === "ok", () => { f.health = "ok"; render(); }),
     choose("Ja, und noch nicht abgeklärt", f.health === "yes", () => { f.health = "yes"; render(); })];
-  else controls = Object.entries(SPORT_OPTIONS[key]).map(([value, label]) =>
-    choose(label, f.data[key] === value, () => { f.data[key] = value; render(); }));
+  else controls = Object.entries(SPORT_OPTIONS[key]).map(([value, text]) =>
+    choose(text, d[key] === value, () => { d[key] = value; render(); }));
   parts.push(card("", ...controls), warn, button(key === "health" ? "Plan erstellen" : "Weiter", () => {
-    if (key === "days") {
-      if (!f.data.days.length) { warn.textContent = "Wähle mindestens einen Tag."; return; }
-      if (f.data.days.length > 6) { warn.textContent = "Lass mindestens einen Tag frei."; return; }
+    if (key === "body") {
+      if (!within(d.ageYears, 13, 100)) { warn.textContent = "Bitte gib ein Alter ab 13 Jahren ein. Für Jüngere plant die App nicht."; return; }
+      if (!within(d.height, 120, 230)) { warn.textContent = "Bitte gib deine Größe in cm ein (120 bis 230)."; return; }
+      if (!within(d.weight, 30, 250)) { warn.textContent = "Bitte gib dein Gewicht in kg ein (30 bis 250)."; return; }
+    } else if (key === "days") {
+      if (!d.days.length) { warn.textContent = "Wähle mindestens einen Tag."; return; }
+      if (d.days.length > 6) { warn.textContent = "Lass mindestens einen Tag frei."; return; }
     } else if (key === "health") {
       if (!f.health) { warn.textContent = "Bitte wähle eine Antwort."; return; }
       if (f.health === "yes") { warn.textContent = "Kläre das bitte zuerst ärztlich ab. Danach stellt dir die App gern einen Plan zusammen."; return; }
-      state.sport = cleanSport({ ...state.sport, profile: f.data, adjust: 0, good: 0 });
+      state.sport = cleanSport({ ...state.sport, profile: d, adjust: 0, good: 0 });
       sportForm = null; save(); chime(); burst(); render(true); return;
-    } else if (key !== "limits" && !f.data[key]) { warn.textContent = "Bitte wähle eine Antwort."; return; }
+    } else if (key !== "limits" && key !== "equipment" && !d[key]) { warn.textContent = "Bitte wähle eine Antwort."; return; }
     f.step++; render(true);
   }));
   return parts;
 }
 function openSportForm() {
   const p = state.sport.profile;
-  sportForm = { step: 0, health: "", data: p ? { ...p, days: [...p.days], limits: [...p.limits] }
-    : { age: "", level: "", goal: "", minutes: "", place: "", days: [0, 2, 4], limits: [] } };
+  sportForm = { step: 0, health: "", data: p ? { ...p, days: [...p.days], limits: [...p.limits], equipment: [...p.equipment] }
+    : { ageYears: "", height: "", weight: "", sex: "x", level: "", goal: "", minutes: "", place: "", days: [0, 2, 4],
+      equipment: [], limits: [] } };
   render(true);
 }
 
@@ -543,21 +652,44 @@ function todaySession() {
   return { ...session(profile, weekPlan(profile)[slot].type, slot, adjust, tired), done: state.sport.log.some(x => x.day === dayKey()) };
 }
 
+// Alle Trainingstage der nächsten 12 Wochen als Datei für den Handy-Kalender.
+function workoutCalendar() {
+  const { profile, adjust } = state.sport;
+  const text = value => String(value).replace(/\\/g, "\\\\").replace(/\n/g, "\\n").replace(/([,;])/g, "\\$1");
+  const stamp = date => date.toISOString().replace(/[-:]/g, "").slice(0, 15) + "Z";
+  const lines = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//Life Control//DE"];
+  const [hour, minute] = profile.time.split(":").map(Number), plan = weekPlan(profile);
+  for (let i = 0; i < 84; i++) {
+    const start = new Date(); start.setDate(start.getDate() + i); start.setHours(hour, minute, 0, 0);
+    const slot = plan.findIndex(d => d.day === weekIndex(start));
+    if (slot < 0 || start < new Date()) continue;
+    const s = session(profile, plan[slot].type, slot, adjust, false, start);
+    lines.push("BEGIN:VEVENT", `UID:${dayKey(start)}-training@lifecontrol`, `DTSTAMP:${stamp(new Date())}`, `DTSTART:${stamp(start)}`,
+      `DTEND:${stamp(new Date(start.getTime() + s.minutes * 60000))}`, `SUMMARY:${text(`Training: ${SPORT_TYPES[s.type][0]}`)}`,
+      `DESCRIPTION:${text(s.exercises.map(e => `${e.name}: ${amountText(e)}`).join("\n"))}`, "END:VEVENT");
+  }
+  return [...lines, "END:VCALENDAR", ""].join("\r\n");
+}
+function exportWorkouts() {
+  const url = URL.createObjectURL(new Blob([workoutCalendar()], { type: "text/calendar;charset=utf-8" }));
+  el("a", { href: url, download: "life-control-training.ics" }).click();
+  setTimeout(() => URL.revokeObjectURL(url), 30000);
+}
+
 function sportPlayer() {
   const r = sportRun, e = r.list[r.i];
   const stop = button("Abbrechen", () => { sportRun = null; render(true); }, "quiet");
   if (!e) {
-    const rate = (value, label) => button(label, () => {
+    const rate = (value, text) => button(text, () => {
       const s = state.sport;
       if (value === "easy") { s.adjust = Math.min(5, s.adjust + 1); s.good = 0; }
       if (value === "hard") { s.adjust = Math.max(-3, s.adjust - 1); s.good = 0; }
       if (value === "pain") { s.adjust = Math.max(-3, s.adjust - 2); s.good = 0; }
       if (value === "good" && ++s.good >= 3) { s.adjust = Math.min(5, s.adjust + 1); s.good = 0; }
       if (!s.log.some(x => x.day === dayKey())) s.log.push({ day: dayKey(), type: r.type });
-      r.message = value === "pain" ? "Gut, dass du es sagst. Der Plan wird leichter. Halten die Schmerzen an, lass sie ärztlich ansehen. Unter „Plan anpassen“ kannst du die Stelle schonen."
+      const message = value === "pain" ? "Gut, dass du es sagst. Der Plan wird leichter. Halten die Schmerzen an, lass sie ärztlich ansehen. Unter „Plan anpassen“ kannst du die Stelle schonen."
         : value === "hard" ? "Verstanden. Das nächste Training wird etwas leichter."
           : value === "easy" ? "Stark! Das nächste Training wird etwas anspruchsvoller." : "Genau richtig. So geht es weiter.";
-      const message = r.message;
       sportRun = null; gain(`sport-${dayKey()}`, 25); state.sport.note = message; save(); chime(); burst(); render(true);
     });
     return [stop, ...title("Geschafft! 🎉", "Wie war es? Danach richtet sich dein Plan."),
@@ -568,13 +700,11 @@ function sportPlayer() {
     el("div", { className: "dots" }, ...r.list.map((_, i) => el("i", { className: i <= r.i ? "on" : "" })))];
   const total = e.unit === "min" ? e.value * 60 : e.value;
   const shown = el("p", { className: "time" });
-  const ring = el("div", { className: "orb" + (r.end ? " go" : "") }, shown);
   const draw = () => {
     const left = r.end ? Math.max(0, Math.ceil((r.end - Date.now()) / 1000)) : r.left || total;
     shown.textContent = e.unit === "reps" ? `${e.value}×` : `${pad(Math.floor(left / 60))}:${pad(left % 60)}`;
-    ring.style.setProperty("--done", e.unit === "reps" ? 0 : 1 - left / total);
     if (r.end && !left) {
-      r.end = 0; r.left = 0; clearInterval(timer); ring.classList.remove("go"); control.textContent = "Zeit um ✓ Noch einmal"; chime(); burst();
+      r.end = 0; r.left = 0; clearInterval(timer); control.textContent = "Zeit um ✓ Noch einmal"; chime(); burst();
     }
   };
   const control = button(r.end ? "Anhalten" : r.left ? "Weiter" : "Timer starten", () => {
@@ -584,9 +714,10 @@ function sportPlayer() {
   }, "btn alt");
   draw();
   if (r.end) timer = setInterval(draw, 250);
-  parts.push(card("big", ring, el("p", { className: "cheer", textContent: e.sets > 1 ? `Durchgang ${r.set} von ${e.sets}` : amountText(e) }),
-    el("p", { textContent: e.how }),
-    e.unit !== "reps" && control),
+  parts.push(card("big", figure(e.pose, calmed()), shown,
+    el("p", { className: "cheer", textContent: e.sets > 1 ? `Durchgang ${r.set} von ${e.sets}` : amountText(e) }),
+    el("p", { textContent: e.how }), TIPS[e.pose] && el("p", { className: "note", textContent: `Achte darauf: ${TIPS[e.pose]}` }),
+    e.need && small(`Gerät: ${EQUIPMENT[e.need]}`), e.unit !== "reps" && control),
     button(r.set < e.sets ? "Durchgang fertig" : "Fertig, weiter", () => {
       if (r.set < e.sets) r.set++; else { r.i++; r.set = 1; }
       r.end = 0; r.left = 0; burst(6); render(true);
@@ -596,19 +727,34 @@ function sportPlayer() {
   return parts;
 }
 
-function sportPage() {
+// Eine Zeile je Übung, zum Aufklappen mit Bild und Anleitung.
+function exerciseList(list) {
+  return list.map(e => {
+    const row = el("details", { className: "move-detail" }, el("summary", { className: "move" },
+      el("span", { textContent: e.name }), el("em", { textContent: amountText(e) })));
+    row.addEventListener("toggle", () => {
+      if (row.open && row.children.length === 1) row.append(figure(e.pose, calmed()), el("p", { textContent: e.how }),
+        ...(TIPS[e.pose] ? [small(`Achte darauf: ${TIPS[e.pose]}`)] : []));
+    });
+    return row;
+  });
+}
+
+function trainingPage() {
   if (sportForm) return sportQuestions();
   if (sportRun) return sportPlayer();
   const { profile, log, mood } = state.sport;
   if (!profile) return [...title("Sportplan", "Dein Training, passend zu dir."),
-    card("big lav", el("div", { className: "mascot", textContent: "🏅" }), el("strong", { textContent: "Stell dir deinen Plan zusammen" }),
-      el("p", { textContent: "Acht kurze Fragen zu Alter, Ziel, Zeit, Ort und Beschwerden. Gewicht oder Körpermaße braucht die App nicht." }),
+    card("big lav", figure("squat", calmed()), el("strong", { textContent: "Stell dir deinen Plan zusammen" }),
+      el("p", { textContent: "Ein paar Fragen zu Alter, Größe, Gewicht, Ziel, Zeit, Geräten und Beschwerden." }),
       button("Los geht's", openSportForm))];
   const plan = weekPlan(profile), today = todaySession();
   const note = state.sport.note; delete state.sport.note;
   const monday = weekStart();
-  const parts = [...title("Sportplan", `${SPORT_OPTIONS.goal[profile.goal]} · ${plan.length}× pro Woche`),
+  const parts = [...title("Sportplan", `${SPORT_OPTIONS.goal[profile.goal]} · ${plan.length}× ${profile.minutes} Min.`),
     note && card("sand cheer", note),
+    !profile.ageYears && card("sand", el("p", { textContent: "Neu: Ergänze Alter, Größe, Gewicht und Geräte, dann passt der Plan genauer." }),
+      button("Angaben ergänzen", openSportForm)),
     card("", el("h3", { textContent: "Meine Trainingswoche" }), el("div", { className: "week" }, ...SPORT_DAYS.map((name, i) => {
       const item = plan.find(d => d.day === i);
       const d = fromKey(monday); d.setDate(d.getDate() + i);
@@ -635,18 +781,23 @@ function sportPage() {
       }));
     parts.push(card("big", small(`Heute · ca. ${today.minutes} Minuten${picked === "tired" ? " · leichte Fassung" : ""}`),
       el("strong", { textContent: `${SPORT_TYPES[today.type][1]} ${SPORT_TYPES[today.type][0]}` }),
-      small("Wie fühlst du dich heute?"), moods,
-      ...today.exercises.map(e => el("p", { className: "move" }, el("span", { textContent: e.name }), el("em", { textContent: amountText(e) }))),
+      small("Wie fühlst du dich heute?"), moods, ...exerciseList(today.exercises),
       button("Training starten", () => { sportRun = { list: today.exercises, type: today.type, i: 0, set: 1, left: 0, end: 0 }; render(true); })));
   }
   parts.push(label("Dein Wochenplan"), card("days-list", ...plan.map((d, slot) => {
     const s = session(profile, d.type, slot, state.sport.adjust, false);
     return el("details", { className: "day" }, el("summary", { textContent: `${SPORT_DAYS[d.day]} · ${SPORT_TYPES[d.type][1]} ${SPORT_TYPES[d.type][0]} · ${s.minutes} Min.` }),
-      ...s.exercises.map(e => el("p", { className: "move" }, el("span", { textContent: e.name }), el("em", { textContent: amountText(e) }))),
+      ...exerciseList(s.exercises),
       !s.exercises.some(e => e.part === "Hauptteil") && small("Für deine Angaben fehlt hier eine passende Übung."));
   })));
+  const time = el("input", { type: "time", value: profile.time });
+  time.addEventListener("change", () => { if (time.value) { profile.time = time.value; save(); } });
   const young = profile.age === "kid" || profile.age === "teen";
-  parts.push(button("Plan anpassen", openSportForm, "btn alt"),
+  parts.push(label("Kalender"), card("", el("p", { textContent: "Deine Trainingstage stehen schon im Kalender dieser App." }),
+    field("Uhrzeit fürs Training", time),
+    button("Auch in den iPhone-Kalender übernehmen", exportWorkouts, "btn alt"),
+    small("Erstellt eine Kalenderdatei für die nächsten 12 Wochen. Änderst du den Plan, übernimm sie neu und lösche alte Einträge.")),
+    button("Plan anpassen", openSportForm, "btn alt"),
     young && profile.place === "gym" && card("sand", el("p", { textContent: profile.age === "kid"
       ? "Unter 16 plant die App nur Übungen mit dem eigenen Körpergewicht. Frag im Studio, ab wann und mit wem du trainieren darfst."
       : "Im Studio: lass dir die Geräte zeigen, nimm leichte Gewichte und mach keine Maximalversuche." })),
@@ -740,8 +891,8 @@ const ENERGY = { high: "⚡ Viel", normal: "🙂 Normal", low: "🔋 Wenig" };
 function cleanMe(data) {
   const pick = (map, value, fallback) => Object.hasOwn(map, value) ? value : fallback;
   const many = (map, list) => [...new Set((Array.isArray(list) ? list : []).filter(x => Object.hasOwn(map, x)))];
-  return { done: data?.done === true, buddy: pick(BUDDIES, data?.buddy, "robo"), buddyName: String(data?.buddyName || "").slice(0, 20),
-    areas: Array.isArray(data?.areas) ? many(AREAS, data.areas) : Object.keys(AREAS), struggles: many(STRUGGLES, data?.struggles),
+  return { v: 2, done: data?.done === true, buddy: pick(BUDDIES, data?.buddy, "robo"), buddyName: String(data?.buddyName || "").slice(0, 20),
+    areas: data?.v === 2 && Array.isArray(data.areas) ? many(AREAS, data.areas) : Object.keys(AREAS), struggles: many(STRUGGLES, data?.struggles),
     rhythm: pick(RHYTHMS, data?.rhythm, "normal"), tone: pick(TONES, data?.tone, "cheer"),
     why: String(data?.why || "").slice(0, 80), energy: { day: String(data?.energy?.day || ""),
       value: pick(ENERGY, data?.energy?.value, "") } };
@@ -800,12 +951,16 @@ function buddySays(open, all) {
 // ---------- Kennenlernen ----------
 let meForm = null;
 function meQuestions() {
-  if (!meForm) meForm = { step: 0, data: cleanMe(state.me) };
+  if (!meForm) {
+    meForm = { step: 0, data: cleanMe(state.me) };
+    // Nichts vorausgewählt: Antippen heißt „will ich“.
+    if (meForm.data.areas.length === Object.keys(AREAS).length) meForm.data.areas = [];
+  }
   const f = meForm, d = f.data;
   const steps = [["buddy", "Wer soll dich begleiten?"], ["areas", "Wobei soll ich dir helfen?"], ["struggles", "Was fällt dir manchmal schwer?"],
     ["rhythm", "Wann bist du am fittesten?"], ["tone", "Wie soll ich mit dir reden?"], ["why", "Wofür machst du das alles?"]];
   const [key, question] = steps[f.step];
-  const choose = (text, on, run) => { const b = button(text, run, "btn alt pick"); b.setAttribute("aria-pressed", on); return b; };
+  const choose = (text, on, run) => { const b = button((on ? "✓ " : "") + text, run, "btn alt pick"); b.setAttribute("aria-pressed", on); return b; };
   let controls;
   if (key === "buddy") {
     const name = el("input", { maxLength: 20, value: d.buddyName, placeholder: `z. B. ${{ robo: "Pixel", cat: "Mimi", fox: "Flo", owl: "Elli" }[d.buddy]}` });
@@ -818,7 +973,7 @@ function meQuestions() {
     const map = key === "areas" ? AREAS : STRUGGLES;
     controls = [...Object.entries(map).map(([value, text]) => choose(text, d[key].includes(value), () => {
       d[key] = d[key].includes(value) ? d[key].filter(x => x !== value) : [...d[key], value]; render();
-    })), small(key === "areas" ? "Mehrere möglich. Aufgaben und Kalender sind immer dabei." : "Mehrere möglich, oder gar nichts.")];
+    })), small(key === "areas" ? "Tippe an, was du möchtest. Ohne Auswahl bekommst du alles. Aufgaben und Kalender sind immer dabei." : "Mehrere möglich, oder gar nichts.")];
   } else if (key === "why") {
     const why = el("input", { maxLength: 80, value: d.why, placeholder: "z. B. Mehr Zeit für meine Freunde" });
     why.ariaLabel = question;
@@ -848,20 +1003,319 @@ function finishMe(data) {
     if (at !== null && task.guide && !task.done.length) task.time = toTime(Math.max(360, Math.min(1350, at + move)));
   }
   state.settings.quiet = { early: "20:00", normal: "21:00", late: "22:30" }[data.rhythm];
-  state.me = cleanMe({ ...data, done: true });
+  state.me = cleanMe({ ...data, v: 2, areas: data.areas.length ? data.areas : Object.keys(AREAS), done: true });
   meForm = null;
   save(); applyAreas();
 }
 
-// Karte unter „Mehr“: was die App über dich weiß.
+// Karte unter „Mehr“: was die App über dich weiß, und welche Bereiche du siehst.
 function meCard() {
-  const m = state.me, line = (name, value) => el("p", { className: "move" }, el("span", { textContent: name }), el("em", { textContent: value }));
+  const m = state.me, line = (name, value) => el("p", { className: "fact" }, el("small", { textContent: name }), el("span", { textContent: value }));
   const list = (map, keys) => keys.map(k => map[k]).join(", ") || "–";
   const best = bestTime();
-  return card("", el("h3", { textContent: "Über mich und meinen Begleiter" }), line("Begleiter", `${buddyName()} (${BUDDIES[m.buddy]})`),
-    line("Bereiche", list(AREAS, m.areas)), line("Schwer fällt mir", list(STRUGGLES, m.struggles)), line("Rhythmus", RHYTHMS[m.rhythm]),
-    line("Ton", TONES[m.tone]), m.why && line("Wofür", m.why), best && line("Am meisten schaffe ich", best),
+  const areas = Object.entries(AREAS).map(([view, text]) => {
+    const box = el("input", { type: "checkbox", checked: wants(view) });
+    box.addEventListener("change", () => {
+      m.areas = Object.keys(AREAS).filter(key => key === view ? box.checked : m.areas.includes(key));
+      save(); applyAreas(); render();
+    });
+    return el("label", { className: "switch" }, el("span", { textContent: text }), box);
+  });
+  return card("", el("h3", { textContent: "Über mich und meinen Begleiter" }), el("h4", { textContent: "Diese Bereiche anzeigen" }), ...areas,
+    line("Begleiter", `${buddyName()} (${BUDDIES[m.buddy]})`), line("Schwer fällt mir", list(STRUGGLES, m.struggles)),
+    line("Rhythmus", RHYTHMS[m.rhythm]), line("Ton", TONES[m.tone]), m.why && line("Wofür", m.why),
+    best && line("Am meisten schaffe ich", best),
     button("Neu kennenlernen", () => { state.me.done = false; meForm = null; save(); host.show("today"); }, "btn alt"));
+}
+// Die Karten unter „Mehr“ klappen wie die übrigen Einstellungen auf.
+let openFold = "";
+function foldCard(node) {
+  const head = node?.querySelector?.(":scope > h3");
+  if (!head) return node;
+  const name = head.textContent;
+  const body = el("div", { className: "fold-body" }, ...[...node.childNodes].filter(n => n !== head));
+  const fold = el("details", { className: "card fold", open: openFold === name },
+    el("summary", {}, el("h2", { textContent: name })), body);
+  fold.addEventListener("toggle", () => {
+    if (!fold.isConnected) return;
+    if (fold.open) {
+      openFold = name;
+      for (const other of document.querySelectorAll("#settings details.fold")) if (other !== fold) other.open = false;
+    } else if (openFold === name) openFold = "";
+  });
+  return fold;
+}
+
+// ================= KI-Zugang (Claude) =================
+// Direkter Aufruf aus dem Browser ohne eigenen Server und ohne Zusatzbibliothek.
+// Der Schlüssel liegt nur auf diesem Gerät, nicht in Sicherungen und nicht im Programmcode.
+const AI_STORE = "lifecontrol-ki";
+const AI_MODELS = { "claude-opus-5-5": "Claude Opus 5.5 (am gründlichsten)", "claude-haiku-5-5": "Claude Haiku 5.5 (viel günstiger)" };
+function aiSettings() {
+  let data = {};
+  try { data = JSON.parse(localStorage.getItem(AI_STORE)) || {}; } catch { /* noch nichts gespeichert */ }
+  return { key: String(data.key || ""), model: Object.hasOwn(AI_MODELS, data.model) ? data.model : "claude-opus-5-5" };
+}
+const aiReady = () => !host.demo() && !!aiSettings().key;
+
+const AI_ERRORS = { 401: "Der Schlüssel wird nicht angenommen. Prüfe ihn unter „Mehr → KI-Zugang“.",
+  403: "Dieser Schlüssel darf diese Anfrage nicht stellen.", 413: "Das Foto ist zu groß.",
+  429: "Zu viele Anfragen oder dein Limit ist erreicht. Warte kurz.", 529: "Die KI ist gerade überlastet. Versuch es gleich noch einmal." };
+
+async function askAI({ system, messages, schema }) {
+  const { key, model } = aiSettings();
+  if (!key) throw new Error("Es ist noch kein KI-Schlüssel eingerichtet.");
+  const body = { model, max_tokens: 8000, system, messages, output_config: { effort: "low" } };
+  if (schema) body.output_config.format = { type: "json_schema", schema };
+  const headers = { "content-type": "application/json", "x-api-key": key, "anthropic-version": "2026-10-21",
+    "anthropic-dangerous-direct-browser-access": "true" };
+  // Lehnt die Sicherheitsprüfung ab, darf ein Ersatzmodell antworten.
+  if (model === "claude-opus-5-5") { body.fallbacks = "default"; headers["anthropic-beta"] = "server-side-fallback-2026-07-01"; }
+  const stop = new AbortController(), limit = setTimeout(() => stop.abort(), 120000);
+  let response, data;
+  try {
+    response = await fetch("https://api.anthropic.com/v1/messages",
+      { method: "POST", headers, body: JSON.stringify(body), signal: stop.signal });
+    data = await response.json();
+  } catch {
+    throw new Error("Keine Verbindung zur KI. Prüfe dein Internet.");
+  } finally { clearTimeout(limit); }
+  if (!response.ok) throw new Error(AI_ERRORS[response.status]
+    || `Die KI meldet einen Fehler: ${String(data?.error?.message || response.status).slice(0, 200)}`);
+  if (data.stop_reason === "refusal") throw new Error("Dabei kann die KI nicht helfen.");
+  if (data.stop_reason === "max_tokens") throw new Error("Die Antwort wurde zu lang. Stell die Frage kürzer.");
+  const text = (data.content || []).filter(b => b.type === "text").map(b => b.text).join("").trim();
+  if (!text) throw new Error("Die KI hat nichts geantwortet.");
+  return { text, content: data.content };
+}
+
+// ---------- Einrichten unter „Mehr“ ----------
+function aiCard() {
+  const current = aiSettings();
+  const key = el("input", { type: "password", autocomplete: "off", spellcheck: false,
+    placeholder: current.key ? "Gespeichert. Neu eingeben, um zu ersetzen." : "sk-ant-…" });
+  const model = select(AI_MODELS, current.model);
+  const status = el("p", { className: "sub", role: "status" });
+  const store = data => { try { localStorage.setItem(AI_STORE, JSON.stringify(data)); return true; } catch { return false; } };
+  const saveButton = button("Speichern und testen", async () => {
+    if (host.demo()) { status.textContent = "In der Demo wird nichts gespeichert."; return; }
+    const value = key.value.trim() || aiSettings().key;
+    if (!value) { status.textContent = "Füge zuerst deinen Schlüssel ein."; return; }
+    if (!store({ key: value, model: model.value })) { status.textContent = "Speichern nicht möglich."; return; }
+    key.value = ""; status.textContent = "Wird getestet …";
+    try {
+      await askAI({ system: "Antworte nur mit dem Wort OK.", messages: [{ role: "user", content: "Test" }] });
+      status.textContent = "Die KI ist verbunden ✓";
+    } catch (error) { status.textContent = error.message; }
+  });
+  return card("", el("h3", { textContent: "KI-Zugang" }),
+    el("p", { textContent: current.key ? "Ein Schlüssel ist gespeichert." : "Für Foto-Analyse und Chat brauchst du einen eigenen Claude-API-Schlüssel." }),
+    small("Den Schlüssel erstellst du auf platform.claude.com. Die Nutzung kostet Geld und wird nach Verbrauch abgerechnet; ein Claude-Abo gilt dafür nicht. Dafür musst du volljährig sein oder ein Elternteil richtet es ein. Setz dort ein Ausgabenlimit."),
+    small("Fotos und Fragen werden zur Beantwortung an Anthropic gesendet. Gib den Schlüssel niemandem."),
+    field("API-Schlüssel", key), field("Modell", model), saveButton, status,
+    current.key && button("Schlüssel von diesem Gerät löschen", () => {
+      try { localStorage.removeItem(AI_STORE); } catch { /* war nicht gespeichert */ }
+      chat = null; render();
+    }, "btn alt"));
+}
+
+// ---------- Chat ----------
+let chat = null, chatOpen = false;
+function chatSystem() {
+  const p = state.sport.profile;
+  const facts = [p?.ageYears && `Alter ${p.ageYears}`, p && `Sportziel: ${SPORT_OPTIONS.goal[p.goal]}`,
+    p?.limits.length && `Rücksicht auf: ${p.limits.map(l => SPORT_LIMITS[l]).join(", ")}`,
+    `Heute offen: ${entries(dayKey()).filter(e => !e.done).map(e => e.title).join(", ") || "nichts"}`].filter(Boolean);
+  return "Du bist der freundliche Begleiter in der Alltags-App Life Control. Antworte auf Deutsch, kurz und konkret, ohne Formatierungszeichen. "
+    + "Du hilfst bei Alltag, Lernen, Bewegung, Essen und Geld. Gib keine Diagnosen und keine Pläne zum Abnehmen oder Fasten, "
+    + "empfiehl keine sehr niedrigen Kalorienmengen und bei Personen unter 18 keine Kalorienziele. "
+    + "Bei Beschwerden, Essproblemen oder seelischer Not rate freundlich dazu, mit einer Vertrauensperson oder Fachleuten zu sprechen; "
+    + `im Notfall 112. Bekannt über die Person: ${facts.join("; ")}.`;
+}
+function chatPage() {
+  if (!chat) chat = { system: chatSystem(), messages: [], shown: [], busy: false, error: "", draft: "" };
+  const c = chat;
+  const input = el("textarea", { rows: 3, value: c.draft, placeholder: "Frag mich etwas …" });
+  input.ariaLabel = "Deine Frage";
+  input.addEventListener("input", () => { c.draft = input.value; });
+  const send = async () => {
+    const text = input.value.trim();
+    if (!text || c.busy) return;
+    c.busy = true; c.error = ""; c.draft = ""; c.shown.push(["me", text]); render();
+    try {
+      const messages = [...c.messages, { role: "user", content: text }];
+      const answer = await askAI({ system: c.system, messages });
+      // Antwortblöcke unverändert behalten, damit das Gespräch gültig bleibt.
+      c.messages = [...messages, { role: "assistant", content: answer.content }];
+      c.shown.push(["ai", answer.text]);
+    } catch (error) { c.error = error.message; c.shown.pop(); c.draft = text; }
+    c.busy = false;
+    if (chat === c && chatOpen) render();
+  };
+  return [button("Zurück", () => { chatOpen = false; render(true); }, "quiet"), ...title(`Frag ${buddyName()}`, "KI-Chat"),
+    !aiReady() && card("sand", el("p", { textContent: "Richte zuerst unter „Mehr → KI-Zugang“ deinen Schlüssel ein." }),
+      button("Zu Mehr", () => { chatOpen = false; openFold = "KI-Zugang"; go("settings"); }, "btn alt")),
+    ...c.shown.map(([who, text]) => el("p", { className: "message " + who, textContent: text })),
+    c.busy && el("p", { className: "message ai", textContent: "Denke nach …" }),
+    c.error && card("sand", c.error),
+    aiReady() && c.messages.length < 40 && card("", input, button("Senden", send)),
+    c.shown.length > 0 && button("Neues Gespräch", () => { chat = null; render(true); }, "btn alt"),
+    small("Die KI kann sich irren. Das Gespräch wird nicht gespeichert.")];
+}
+
+// ================= Ernährung, Trinken und Schritte =================
+// Richtwerte sind grobe Orientierung (Annahmen). Keine Diät, kein Kaloriendefizit.
+function cleanFood(data) {
+  const day = v => /^\d{4}-\d\d-\d\d$/.test(v);
+  const amount = (v, max) => Math.max(0, Math.min(max, Math.round(Number(String(v ?? "").replace(",", ".")) || 0)));
+  const daily = (map, max) => Object.fromEntries(Object.entries(map && typeof map === "object" ? map : {})
+    .filter(([k]) => day(k)).slice(-120).map(([k, v]) => [k, amount(v, max)]));
+  return { entries: (Array.isArray(data?.entries) ? data.entries : []).filter(e => day(e?.day)).slice(-600).map(e => ({
+    id: String(e.id || "").slice(0, 30) || newId(), day: e.day, name: String(e.name || "Essen").slice(0, 80),
+    kcal: amount(e.kcal, 10000), protein: amount(e.protein, 1000), fiber: amount(e.fiber, 500), ai: e.ai === true })),
+    water: daily(data?.water, 10000), steps: daily(data?.steps, 100000) };
+}
+
+// Richtwerte aus Alter, Gewicht, Größe und Trainingsziel.
+function targets() {
+  const p = state.sport.profile;
+  const age = p?.ageYears || 0, weight = p?.weight || 0, height = p?.height || 0;
+  const adult = age >= 18;
+  const trains = weekPlan(p || { goal: "all", days: [] }).some(d => d.day === weekIndex());
+  const base = !age ? 2000 : adult ? Math.max(1500, Math.min(3000, Math.round((weight * 33 || 2000) / 100) * 100)) : age < 15 ? 2000 : 2200;
+  return { known: !!(age && weight && height), adult,
+    water: base + (trains ? 500 : 0),
+    protein: weight ? Math.round(weight * (adult ? (p.goal === "strength" ? 1.4 : .8) : .9)) : 0,
+    fiber: !age || adult ? 30 : 25,
+    steps: !age ? 8000 : age < 18 ? 10000 : age >= 60 ? 7000 : 8000,
+    // Nur für Erwachsene: ungefährer Bedarf, um das Gewicht zu halten (Mifflin-St Jeor).
+    kcal: adult && weight && height ? Math.round((10 * weight + 6.25 * height - 5 * age + ({ f: -161, m: 5, x: -78 })[p.sex])
+      * ({ 1: 1.4, 2: 1.55, 3: 1.7 })[p.level] / 50) * 50 : 0 };
+}
+// Kalorien zeigt die App nur Erwachsenen.
+const showKcal = () => targets().adult;
+
+// Foto verkleinern, damit es schnell und günstig übertragen wird.
+async function shrink(file) {
+  const url = URL.createObjectURL(file);
+  try {
+    const image = new Image();
+    await new Promise((done, fail) => { image.onload = done; image.onerror = () => fail(new Error("Dieses Foto kann ich nicht lesen.")); image.src = url; });
+    const scale = Math.min(1, 1200 / Math.max(image.width, image.height));
+    const canvas = el("canvas", { width: Math.round(image.width * scale), height: Math.round(image.height * scale) });
+    canvas.getContext("2d").drawImage(image, 0, 0, canvas.width, canvas.height);
+    return canvas.toDataURL("image/jpeg", .82);
+  } finally { URL.revokeObjectURL(url); }
+}
+const FOOD_SCHEMA = { type: "object", additionalProperties: false,
+  required: ["is_food", "name", "portion", "kcal", "protein_g", "fiber_g", "confidence", "note"],
+  properties: { is_food: { type: "boolean" }, name: { type: "string" }, portion: { type: "string" }, kcal: { type: "number" },
+    protein_g: { type: "number" }, fiber_g: { type: "number" }, confidence: { type: "string", enum: ["low", "medium", "high"] },
+    note: { type: "string" } } };
+async function analyseFood(dataUrl, hint) {
+  const answer = await askAI({
+    system: "Du schätzt Nährwerte von Mahlzeiten auf Fotos. Antworte auf Deutsch. Schätze die sichtbare Portion als Ganzes. "
+      + "Zeigt das Foto kein Essen oder Getränk, setze is_food auf false und die Zahlen auf 0. In note steht kurz, was die Schätzung unsicher macht. "
+      + "Bewerte das Essen nicht und gib keine Diätratschläge.",
+    messages: [{ role: "user", content: [
+      { type: "image", source: { type: "base64", media_type: "image/jpeg", data: dataUrl.split(",")[1] } },
+      { type: "text", text: hint ? `Zusatzinfo: ${hint}` : "Was ist das und welche Nährwerte hat es ungefähr?" }] }],
+    schema: FOOD_SCHEMA });
+  let result;
+  try { result = JSON.parse(answer.text); } catch { throw new Error("Die Antwort der KI war unlesbar. Versuch es noch einmal."); }
+  if (!result.is_food) throw new Error("Auf dem Foto erkenne ich kein Essen.");
+  return result;
+}
+
+let foodDraft = null;
+function meter(name, value, target, unit) {
+  const bar = el("i"); bar.style.width = target ? Math.min(100, value / target * 100) + "%" : "0%";
+  return el("div", { className: "meter" }, el("p", {}, el("span", { textContent: name }),
+    el("b", { textContent: `${value.toLocaleString("de-DE")}${target ? ` / ${target.toLocaleString("de-DE")}` : ""} ${unit}` })),
+    el("div", { className: "bar" }, bar));
+}
+function foodForm() {
+  const d = foodDraft;
+  const input = (text, key, type = "number") => {
+    const node = el("input", { type, value: d[key] ?? "", ...(type === "number" ? { inputMode: "decimal", min: 0, step: "any" } : { maxLength: 80 }) });
+    node.addEventListener("input", () => { d[key] = node.value; });
+    return field(text, node);
+  };
+  const warn = el("p", { className: "sub", role: "status" });
+  return card("big", el("strong", { textContent: d.ai ? "Prüf die Schätzung" : "Essen eintragen" }),
+    d.photo && el("img", { src: d.photo, alt: "Dein Foto", className: "photo" }),
+    d.ai && el("p", { className: "note", textContent: `Geschätzt${d.portion ? ` für: ${d.portion}` : ""}. Sicherheit: ${({ low: "niedrig", medium: "mittel", high: "hoch" })[d.confidence] || "unklar"}. ${d.note || ""}` }),
+    input("Was war es?", "name", "text"), showKcal() && input("Kalorien (kcal)", "kcal"), input("Protein (g)", "protein"),
+    input("Ballaststoffe (g)", "fiber"), warn,
+    button("Speichern", () => {
+      if (!String(d.name || "").trim()) { warn.textContent = "Schreib kurz auf, was es war."; return; }
+      state.food.entries.push(cleanFood({ entries: [{ ...d, day: dayKey() }] }).entries[0]);
+      foodDraft = null; gain(`food-${dayKey()}`, 5); save(); render(true);
+    }),
+    button("Verwerfen", () => { foodDraft = null; render(true); }, "btn alt"));
+}
+function foodPage() {
+  const day = dayKey(), t = targets(), list = state.food.entries.filter(e => e.day === day);
+  const sum = key => list.reduce((total, e) => total + e[key], 0);
+  const water = state.food.water[day] || 0;
+  const drink = ml => () => { state.food.water[day] = Math.max(0, water + ml); save(); render(); };
+  const steps = el("input", { type: "number", inputMode: "numeric", min: 0, max: 100000, value: state.food.steps[day] || "", placeholder: "z. B. 6000" });
+  steps.addEventListener("change", () => { state.food.steps[day] = Number(steps.value) || 0; state.food = cleanFood(state.food); save(); render(); });
+  const status = el("p", { className: "sub", role: "status" });
+  const file = el("input", { type: "file", accept: "image/*", hidden: true });
+  const hint = el("input", { maxLength: 150, placeholder: "z. B. mit 1 EL Öl, große Portion" });
+  const photo = button("📷 Foto vom Essen", () => {
+    if (!aiReady()) { status.textContent = host.demo() ? "In der Demo ist die KI ausgeschaltet." : "Richte zuerst unter „Mehr → KI-Zugang“ deinen Schlüssel ein."; return; }
+    file.click();
+  });
+  file.addEventListener("change", async () => {
+    const chosen = file.files[0];
+    file.value = "";
+    if (!chosen) return;
+    photo.disabled = true; status.textContent = "Die KI schaut sich dein Essen an …";
+    try {
+      const image = await shrink(chosen), r = await analyseFood(image, hint.value.trim());
+      foodDraft = { ai: true, photo: image, name: r.name, portion: r.portion, kcal: Math.round(r.kcal), protein: Math.round(r.protein_g),
+        fiber: Math.round(r.fiber_g), confidence: r.confidence, note: r.note };
+      render(true);
+    } catch (error) { photo.disabled = false; status.textContent = error.message; }
+  });
+  if (foodDraft) return [...title("Ernährung", "Kurz prüfen, dann speichern."), foodForm()];
+  return [...title("Ernährung", "Essen, Trinken und Schritte von heute."),
+    !t.known && card("sand", el("p", { textContent: "Gib im Sportplan Alter, Größe und Gewicht an, dann passen die Richtwerte zu dir." }),
+      button("Angaben machen", () => { sportTab = "training"; openSportForm(); }, "btn alt")),
+    card("big", photo, field("Hinweis zum Foto (wenn du magst)", hint), file, status,
+      button("Ohne Foto eintragen", () => { foodDraft = { ai: false, name: "" }; render(true); }, "btn alt")),
+    card("", el("h3", { textContent: "Heute gegessen" }),
+      meter("Protein", sum("protein"), t.protein, "g"), meter("Ballaststoffe", sum("fiber"), t.fiber, "g"),
+      showKcal() && meter("Kalorien", sum("kcal"), t.kcal, "kcal"),
+      showKcal() && t.kcal > 0 && small("Der Kalorienwert ist der geschätzte Bedarf zum Halten des Gewichts, kein Diätziel."),
+      ...list.map(e => el("div", { className: "item" }, el("span", { className: "title" }, e.name,
+        small(`${showKcal() ? `${e.kcal} kcal · ` : ""}${e.protein} g Protein · ${e.fiber} g Ballaststoffe${e.ai ? " · KI-Schätzung" : ""}`)),
+        button("✕", () => { if (confirm(`„${e.name}“ löschen?`)) { state.food.entries.splice(state.food.entries.indexOf(e), 1); save(); render(); } }, "quiet"))),
+      !list.length && small("Noch nichts eingetragen.")),
+    card("", el("h3", { textContent: "Trinken" }), meter("Getrunken", water, t.water, "ml"),
+      el("div", { className: "chips" }, button("+ 250 ml", drink(250), ""), button("+ 500 ml", drink(500), ""), water > 0 && button("− 250 ml", drink(-250), "")),
+      small("Richtwert, an Trainingstagen etwas höher. Bei Herz- oder Nierenproblemen gilt der ärztliche Rat.")),
+    card("", el("h3", { textContent: "Schritte" }), meter("Gegangen", state.food.steps[day] || 0, t.steps, "Schritte"),
+      field("Schritte von heute eintragen", steps),
+      small("Die App kann deine Schritte nicht selbst auslesen. Schau in der Health-App nach und trag die Zahl ein.")),
+    small("Alle Werte sind Schätzungen und ersetzen keine Ernährungsberatung. Wenn Essen dich belastet, sprich mit jemandem, dem du vertraust.")];
+}
+
+// ---------- Sport-Bereich mit zwei Reitern ----------
+let sportTab = "training";
+function sportPage() {
+  if (sportRun || sportForm) return trainingPage();
+  const tabs = el("div", { className: "tabs", role: "group", ariaLabel: "Bereich" },
+    ...[["training", "Training"], ["food", "Ernährung"]].map(([key, text]) => {
+      const b = button(text, () => { sportTab = key; foodDraft = null; render(true); }, "");
+      b.setAttribute("aria-pressed", sportTab === key); return b;
+    }));
+  const parts = sportTab === "food" ? foodPage() : trainingPage();
+  const sub = parts.findIndex(node => node?.classList?.contains("sub"));
+  parts.splice(sub + 1, 0, tabs);
+  return parts;
 }
 
 
@@ -994,7 +1448,7 @@ function clean(data) {
       done: list(t?.done).filter(date), skip: list(t?.skip).filter(date) })).filter(t => t.title),
     history: list(data?.history).map(h => ({ ref: text(h?.ref, 40), day: date(h?.day),
       minute: Number(h?.minute) || 0, helped: h?.helped === true })),
-    me: cleanMe(data?.me), sport: cleanSport(data?.sport), quest: cleanQuest(data?.quest), xp: Math.max(0, Math.min(1e7, Number(data?.xp) || 0)),
+    me: cleanMe(data?.me), food: cleanFood(data?.food), sport: cleanSport(data?.sport), quest: cleanQuest(data?.quest), xp: Math.max(0, Math.min(1e7, Number(data?.xp) || 0)),
     awarded: list(data?.awarded).map(x => text(x, 60)), cheer: "",
     short: Object.fromEntries(Object.keys(GUIDES).filter(k => typeof data?.short?.[k] === "boolean")
       .map(k => [k, data.short[k]])),
@@ -1110,7 +1564,7 @@ function render(focusTop) {
   const box = document.getElementById(current === "me" ? "alltag-me" : current);
   if (!state.ready) { box.replaceChildren(card("", "Beantworte zuerst die kurzen Fragen.")); return; }
   const content = run ? runPage() : PAGES[current]();
-  box.replaceChildren(...content.filter(Boolean));
+  box.replaceChildren(...content.filter(Boolean).map(n => current === "me" ? foldCard(n) : n));
   if (saveFailed) box.prepend(card("sand", "Speichern ist in diesem Browser nicht möglich."));
   banner(box);
   if (focusTop) { scrollTo(0, 0); intro(box); }
@@ -1179,8 +1633,13 @@ function entries(day, fixed = fixedDates()) {
     const logged = log.find(x => x.day === day);
     const planned = weekPlan(profile).find(d => d.day === weekIndex(fromKey(day)));
     const sick = day === today && mood.day === day && mood.value === "sick";
-    if (logged || (planned && day >= today && !sick)) list.push({ view: "sport", kind: `Training · ca. ${profile.minutes} Min.`,
-      title: SPORT_TYPES[(logged || planned).type][0], done: !!logged, run: () => go("sport") });
+    if (logged || (planned && day >= today && !sick)) {
+      const type = (logged || planned).type, slot = weekPlan(profile).findIndex(d => d === planned || d.day === planned?.day);
+      const moves = planned ? session(profile, type, Math.max(0, slot), state.sport.adjust, false, fromKey(day)).exercises
+        .filter(e => e.part === "Hauptteil").map(e => e.name) : [];
+      list.push({ view: "sport", kind: `Training · ca. ${profile.minutes} Min.`, time: profile.time,
+        title: SPORT_TYPES[type][0], detail: moves.join(", "), done: !!logged, run: () => go("sport") });
+    }
   }
   const now = currentQuest();
   if (day === today && now && now.next >= 0) {
@@ -1204,6 +1663,7 @@ function entryRow(e, { next = false, extra = [] } = {}) {
   row.dataset.to = e.view;
   const text = button("", e.run, "text");
   text.append(small([next && "Als Nächstes", e.kind, e.time].filter(Boolean).join(" · ")), el("b", { textContent: e.title }));
+  if (e.detail && current === "plan") text.append(el("span", { className: "detail", textContent: e.detail }));
   let action;
   if (e.toggle) {
     action = button(e.done ? "✓" : "", e.toggle, "check");
@@ -1240,6 +1700,7 @@ function fiveMinutes(task) {
 }
 function todayPage() {
   if (!state.me.done) return meQuestions();
+  if (chatOpen) return chatPage();
   const day = dayKey(), all = entries(day), open = all.filter(e => !e.done), has = key => state.me.struggles.includes(key);
   const light = state.lightDay === day, low = energyToday() === "low";
   const parts = [playerCard(host.profile().name, open.length), buddyCard(open, all), label("Heute zu tun")];
@@ -1272,7 +1733,8 @@ function todayPage() {
   if (!state.settings.single) parts.push(...all.filter(e => e.done).map(e => entryRow(e)));
   if (open.length > 1) parts.push(button("Heute ist mir zu viel",
     () => { state.lightDay = day; save(); render(true); }, "quiet center"));
-  parts.push(button("Zum Kalender", () => go("plan"), "btn alt"));
+  parts.push(button("Zum Kalender", () => go("plan"), "btn alt"),
+    button(`💬 Frag ${buddyName()} (KI)`, () => { chatOpen = true; render(true); }, "btn alt"));
   if (has("forget") && !state.settings.remind) parts.push(card("lav", el("p", { textContent: "Du vergisst manchmal Dinge. Soll ich dich erinnern, solange die App offen ist?" }),
     button("Erinnerungen einschalten", async () => {
       state.settings.remind = true; save();
@@ -1495,7 +1957,7 @@ function mePage() {
       [`„${GUIDES[key].title}“ wird kurz angezeigt.`, () => { delete state.short[key]; }]),
     ...(state.history.length ? [[`${state.history.length} erledigte Aufgaben mit Uhrzeit (für Vorschläge).`,
       () => { state.history = []; state.dismissed = []; }]] : [])];
-  return [meCard(),
+  return [meCard(), aiCard(),
     card("", el("h3", { textContent: "Heute" }), toggle("Nur eine Aufgabe zeigen", "single"), toggle("Töne", "sound", () => chime())),
     card("", el("h3", { textContent: "Aufgaben-Erinnerungen" }),
       toggle("Erinnern, wenn etwas dran ist", "remind", async box => {
@@ -1559,16 +2021,17 @@ const SAMPLE = () => clean({ me: { done: true, buddy: "fox", buddyName: "Flo" },
   tools: [{ title: "Sport", target: 3, log: [dayKey()] }],
   quest: { type: "save", title: "Neues Fahrrad", answers: { price: "400", have: "100", monthly: "50" }, route: "plain",
     done: ["0-0", "0-1"] },
-  sport: { profile: { age: "adult", level: "2", goal: "all", minutes: "20", place: "home", days: [0, 1, 2, 3, 4, 5], limits: [] } } });
+  sport: { profile: { ageYears: 30, weight: 70, height: 172, level: "2", goal: "all", minutes: "20", place: "home", days: [0, 1, 2, 3, 4, 5], equipment: ["dumbbell", "band"], limits: [] } },
+  food: { entries: [{ day: dayKey(), name: "Müsli mit Obst", kcal: 380, protein: 14, fiber: 8 }], water: { [dayKey()]: 750 }, steps: { [dayKey()]: 4200 } } });
 return {
   open(next) {
-    current = next; run = null; wizard = null; openNode = null; openStage = 0; sportForm = null; sportRun = null; planDay = dayKey(); calMonth = ""; showAll = false; meForm = null; applyAreas();
-    render(); intro(next && next !== "me" ? document.getElementById(next) : null);
+    const moved = current !== next; current = next; run = null; wizard = null; openNode = null; openStage = 0; sportForm = null; sportRun = null; planDay = dayKey(); calMonth = ""; showAll = false; meForm = null; foodDraft = null; chatOpen = false; sportTab = "training"; applyAreas();
+    render(); if (moved) intro(next && next !== "me" ? document.getElementById(next) : null);
   },
   render, ensure() { ensure(); render(); },
   dump: () => state,
   load(data) { if (Array.isArray(data?.tasks)) { state = clean(data); save(); render(); } },
-  reset() { state = clean(null); save(); },
+  reset() { state = clean(null); try { localStorage.removeItem(AI_STORE); } catch { /* nichts gespeichert */ } chat = null; save(); },
   demo() { state = SAMPLE(); render(); },
 };
 }

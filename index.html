@@ -711,12 +711,70 @@ html[data-off~=way] nav [data-view=way], html[data-off~=sport] nav [data-view=sp
   border-radius:18px; color:var(--ink); box-shadow:none }
 .alltag .buddy[aria-pressed=true] { border-color:var(--accent); background:var(--soft) }
 
+/* ---------- Ruhig laufende Animationen: nur Verschieben und Einblenden ---------- */
+html, body { overflow-x:clip }
+html[data-style=spiel] { transition:none }
+html[data-style=spiel] :is(nav,.card,.stat) { backdrop-filter:none; -webkit-backdrop-filter:none }
+html[data-style=spiel] nav { background:#fff }
+html[data-style=spiel] body { background-attachment:scroll }
+html[data-style=spiel] body::before { inset:0; animation:none }
+html[data-style=spiel] body::after { display:none }
+html[data-style=spiel] :is(.alltag .card.big,#startCard) { animation:none; border:2px solid var(--accent);
+  background:linear-gradient(180deg,#fff 20%,color-mix(in srgb,var(--soft) 55%,#fff)) }
+html[data-style=spiel] :is(button.primary,.alltag .btn)::after { display:none }
+html[data-style=spiel] :is(.alltag .bar,.player .bar,#home .card .bar) i { animation:none; box-shadow:none }
+html[data-style=spiel] .view, html[data-style=spiel] .step { animation:none }
+html[data-style=spiel] .fold-body { animation:soft-in .2s ease-out }
+html[data-style=spiel] .alltag .map .node, html[data-style=spiel] .alltag .map li:nth-child(even) .node { animation:none }
+html[data-style=spiel] .alltag .map .here .node { animation:pulse 2.4s ease-in-out infinite }
+html[data-style=spiel] :is(.avatar .ring,.avatar .bot,.avatar .light) { animation:none }
+html[data-style=spiel] .player .avatar { animation:float 3.6s ease-in-out infinite; will-change:transform }
+html[data-style=spiel] .intro > * { animation:soft-in .32s ease-out calc(var(--i,0) * 40ms) backwards !important }
+@keyframes soft-in { from { opacity:0; transform:translate3d(0,12px,0) } }
+@keyframes pulse { 50% { transform:scale(1.07) } }
+
+/* Mehr: gleich aufgebaute, einzeln abgerundete Zeilen */
+html[data-style=spiel] #settings details.fold, html[data-style=spiel] #settings details.fold:not(:has(+ details.fold)),
+html[data-style=spiel] #settings :not(details.fold) + details.fold { margin-top:10px; border:1px solid var(--line); border-radius:18px }
+html[data-style=spiel] #settings details.fold[open] { border-color:var(--accent) }
+#settings details.fold summary h2 { min-width:0; font-size:1.05rem; line-height:1.35 }
+#settings .alltag details.fold { margin:10px 0 0; padding:0 }
+#settings h4 { font-size:.9rem; margin:0 0 4px }
+.alltag .fact { padding:8px 0; border-top:1px solid var(--line) }
+.alltag .fact span { display:block; overflow-wrap:anywhere }
+.alltag .move { flex-wrap:wrap }
+.alltag .move em { white-space:normal }
+/* iPhone: Datums- und Zeitfelder gleich groß und linksbündig */
+input[type=time], input[type=date], input[type=month] { -webkit-appearance:none; appearance:none; display:block; min-height:46px; max-width:100%; text-align:left }
+input::-webkit-date-and-time-value { text-align:left; min-height:1.4em; margin:0 }
+
 /* iPhone: kein Hineinzoomen in Felder, nichts unter Uhr oder Home-Balken */
 @supports (-webkit-touch-callout:none) { input, select, textarea { font-size:16px !important } }
 button, summary { touch-action:manipulation; -webkit-user-select:none; user-select:none }
 nav { -webkit-backdrop-filter:blur(12px) }
 #demoBar { top:env(safe-area-inset-top) }
 #lock { padding-top:calc(20px + env(safe-area-inset-top)); padding-bottom:calc(20px + env(safe-area-inset-bottom)) }
+
+/* Sport, Ernährung und KI */
+.alltag .tabs { display:grid; grid-template-columns:1fr 1fr; gap:6px; padding:5px; margin-bottom:12px; background:var(--card); border:1px solid var(--line); border-radius:20px }
+.alltag .tabs button { border:0; background:transparent; box-shadow:none }
+.alltag .tabs button[aria-pressed=true] { background:var(--accent); color:var(--on-accent) }
+.alltag .figure { display:grid; place-items:center; margin:2px 0 10px; background:var(--soft); border-radius:18px; padding:8px }
+.alltag .figure svg { width:170px; height:170px; fill:none; stroke:var(--accent); stroke-width:4.5; stroke-linecap:round; stroke-linejoin:round }
+.alltag .figure circle { fill:#fff; stroke-width:3.5 }
+.alltag .figure .floor { stroke-width:2; opacity:.35 }
+.alltag .move-detail summary { cursor:pointer; list-style:none; margin:0 }
+.alltag .move-detail summary::-webkit-details-marker { display:none }
+.alltag .move-detail summary span::before { content:"▸ "; color:var(--accent) }
+.alltag .move-detail[open] summary span::before { content:"▾ " }
+.alltag .move-detail .figure { margin-top:8px } .alltag .move-detail .figure svg { width:130px; height:130px }
+.alltag .meter p { display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap; margin-top:8px }
+.alltag .meter .bar { margin:5px 0 4px }
+.alltag .photo { display:block; width:100%; max-height:260px; object-fit:cover; border-radius:16px; margin:8px 0 }
+.alltag .message { white-space:pre-wrap; overflow-wrap:anywhere; padding:11px 14px; border-radius:18px; margin-bottom:9px; background:var(--card); border:1px solid var(--line) }
+.alltag .message.me { background:var(--soft); margin-left:34px }
+.alltag .message.ai { margin-right:18px }
+.alltag .entry .detail { display:block; font-weight:400; font-size:.8rem; color:#4a4660; margin-top:2px }
 
 /* Anmeldung */
 #lock #lockForm button { margin-top:12px }
