@@ -1,6 +1,6 @@
 // © 2026 TinyRoom Studio. Alle Rechte vorbehalten.
 // Netz zuerst (für Updates), ohne Netz aus dem Speicher.
-const CACHE = "meinweg-alles-25";
+const CACHE = "meinweg-alles-26";
 const FILES = ["./", "index.html", "alltag.js", "manifest.webmanifest",
   "icon-180.png", "icon-192.png", "icon-512.png"];
 self.addEventListener("install", event => {

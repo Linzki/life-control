@@ -1318,6 +1318,185 @@ function sportPage() {
   return parts;
 }
 
+// ================= Gedächtnis: Obsidian-Notizen offline =================
+// Die Notizen liegen nur auf diesem Gerät (IndexedDB). Nichts davon geht an eine KI oder ins Internet.
+const NOTES_DB = "lifecontrol-notizen";
+let notes = null, notesView = null, notesError = "";
+
+function notesStore(mode, work) {
+  return new Promise((done, fail) => {
+    const opening = indexedDB.open(NOTES_DB, 1);
+    opening.onupgradeneeded = () => opening.result.createObjectStore("notes", { keyPath: "id" });
+    opening.onerror = () => fail(opening.error);
+    opening.onsuccess = () => {
+      const db = opening.result, action = db.transaction("notes", mode), result = work(action.objectStore("notes"));
+      action.oncomplete = () => { db.close(); done(result?.result); };
+      action.onerror = action.onabort = () => { db.close(); fail(action.error); };
+    };
+  });
+}
+async function loadNotes() {
+  try { notes = await notesStore("readonly", store => store.getAll()) || []; notesError = ""; }
+  catch { notes = []; notesError = "Notizen lassen sich in diesem Browser nicht speichern."; }
+}
+const cleanNote = (n, own) => ({ id: String(n.id || "").slice(0, 60) || newId(), title: String(n.title || "Notiz").slice(0, 200),
+  folder: String(n.folder || "").slice(0, 300), text: String(n.text || "").slice(0, 200000),
+  updated: String(n.updated || "").slice(0, 25), own });
+
+// Nimmt das Paket vom PC oder einzelne Markdown-Dateien an. Eigene Handy-Notizen bleiben erhalten.
+async function importNotes(files) {
+  const incoming = [], arrived = new Set();
+  let bundle = false;
+  for (const file of files) {
+    if (file.size > 20e6) throw new Error("Die Datei ist zu groß.");
+    const text = await file.text();
+    if (file.name.toLowerCase().endsWith(".json")) {
+      let data;
+      try { data = JSON.parse(text); } catch { throw new Error("Diese Datei ist kein gültiges Notiz-Paket."); }
+      if (data?.app !== "life-control-notizen" || !Array.isArray(data.notes)) throw new Error("Diese Datei ist kein Notiz-Paket vom PC.");
+      bundle = true;
+      for (const n of data.notes.slice(0, 5000)) {
+        if (n.handyId) arrived.add(String(n.handyId));
+        incoming.push(cleanNote({ ...n, id: `pc:${n.folder}/${n.title}`.slice(0, 60) + newId() }, false));
+      }
+    } else if (/\.(md|txt)$/i.test(file.name)) {
+      const title = file.name.replace(/\.(md|txt)$/i, "");
+      incoming.push(cleanNote({ id: `datei:${title}`, title, folder: "Einzelne Dateien", text }, false));
+    }
+  }
+  if (!incoming.length) throw new Error("Darin sind keine Notizen.");
+  await notesStore("readwrite", store => {
+    // Ein neues Paket ersetzt die alten PC-Notizen. Angekommene Handy-Notizen werden nicht doppelt geführt.
+    if (bundle) for (const old of notes) if (!old.own || arrived.has(old.id)) store.delete(old.id);
+    for (const n of incoming) store.put(n);
+  });
+  await loadNotes();
+  return incoming.length;
+}
+async function sendNotesBack() {
+  const own = notes.filter(n => n.own);
+  const data = JSON.stringify({ app: "life-control-neue-notizen", notes: own.map(n => ({ id: n.id, title: n.title, text: n.text, updated: n.updated })) }, null, 1);
+  const file = new File([data], `life-control-neue-notizen-${dayKey()}.json`, { type: "application/json" });
+  if (navigator.canShare?.({ files: [file] })) {
+    try { await navigator.share({ files: [file] }); } catch { /* abgebrochen */ }
+    return;
+  }
+  const url = URL.createObjectURL(file);
+  el("a", { href: url, download: file.name }).click();
+  setTimeout(() => URL.revokeObjectURL(url), 30000);
+}
+
+// Einfache, sichere Darstellung: Überschriften, Listen, Fettdruck und [[Verweise]].
+function inline(text) {
+  return text.split(/(\*\*[^*]+\*\*|!?\[\[[^\]]+\]\])/).filter(Boolean).map(part => {
+    if (part.startsWith("**") && part.endsWith("**") && part.length > 4) return el("b", { textContent: part.slice(2, -2) });
+    const link = part.match(/^(!?)\[\[([^\]]+)\]\]$/);
+    if (!link) return document.createTextNode(part);
+    const [target, alias] = link[2].split("|");
+    const name = target.split("#")[0].split("/").pop().trim().toLowerCase();
+    const found = notes.find(n => n.title.toLowerCase() === name);
+    const text = alias || target;
+    return found && !link[1] ? button(text, () => { notesView = { mode: "read", id: found.id, query: notesView.query }; render(true); }, "wiki")
+      : document.createTextNode(text);
+  });
+}
+function markdown(source) {
+  const box = el("div", { className: "note-text" });
+  for (const line of source.replace(/\r/g, "").replace(/^---\n[\s\S]*?\n---\n/, "").split("\n")) {
+    const heading = line.match(/^(#{1,6})\s+(.*)/), item = line.match(/^(\s*)(?:[-*+]|\d+\.)\s+(?:\[( |x|X)\]\s+)?(.*)/);
+    if (heading) box.append(el(heading[1].length < 3 ? "h3" : "h4", {}, ...inline(heading[2])));
+    else if (item) box.append(el("p", { className: "bullet", style: `margin-left:${Math.min(3, item[1].length / 2) * 12}px` },
+      item[2] === undefined ? "• " : item[2] === " " ? "☐ " : "☑ ", ...inline(item[3])));
+    else if (/^\s*\|?[\s:|-]+\|[\s:|-]*$/.test(line)) continue;
+    else if (/^\s*\|/.test(line)) box.append(el("p", {}, ...inline(
+      // Tabellenzeile: Striche außerhalb von [[Verweisen]] werden zu Punkten.
+      line.trim().replace(/^\||\|$/g, "").replace(/\s*\\?\|\s*(?![^\[\]]*\]\])/g, " · "))));
+    else if (line.trim()) box.append(el("p", {}, ...inline(line.replace(/^>\s?/, ""))));
+  }
+  return box;
+}
+function findNotes(query) {
+  const words = query.toLowerCase().split(/\s+/).filter(Boolean);
+  const scored = notes.map(n => {
+    const title = n.title.toLowerCase(), all = `${title} ${n.folder.toLowerCase()} ${n.text.toLowerCase()}`;
+    return words.every(w => all.includes(w)) ? { n, score: words.filter(w => title.includes(w)).length * 2 + (n.own ? 1 : 0) } : null;
+  }).filter(Boolean);
+  return scored.sort((a, b) => b.score - a.score || b.n.updated.localeCompare(a.n.updated) || a.n.title.localeCompare(b.n.title)).map(x => x.n);
+}
+
+function notesPage() {
+  const v = notesView;
+  if (!notes) {
+    loadNotes().then(() => { if (notesView) render(); });
+    return [...title("Gedächtnis", "Wird geladen …")];
+  }
+  const back = (text, run) => button(text, run, "quiet");
+  const toList = () => { notesView = { mode: "list", query: v.query }; render(true); };
+  if (v.mode === "edit") {
+    const old = notes.find(n => n.id === v.id);
+    const name = el("input", { maxLength: 120, value: v.title ?? old?.title ?? "", placeholder: "Titel" });
+    const body = el("textarea", { rows: 10, value: v.text ?? old?.text ?? "", placeholder: "Was willst du dir merken?" });
+    name.addEventListener("input", () => { v.title = name.value; });
+    body.addEventListener("input", () => { v.text = body.value; });
+    const warn = el("p", { className: "sub", role: "status" });
+    return [back("Abbrechen", toList), ...title(old ? "Notiz ändern" : "Neue Notiz", "Wird auf diesem Gerät gespeichert."),
+      card("", field("Titel", name), field("Text", body)), warn,
+      button("Speichern", async () => {
+        if (host.demo()) { warn.textContent = "In der Demo wird nichts gespeichert."; return; }
+        const heading = name.value.trim() || body.value.trim().split("\n")[0].slice(0, 60);
+        if (!heading) { warn.textContent = "Schreib zuerst etwas."; return; }
+        const note = cleanNote({ id: old?.id || `handy-${newId()}`, title: heading, folder: "Vom Handy", text: body.value,
+          updated: new Date().toISOString().slice(0, 19) }, true);
+        try { await notesStore("readwrite", store => { store.put(note); }); } catch { warn.textContent = "Speichern hat nicht geklappt."; return; }
+        await loadNotes(); notesView = { mode: "read", id: note.id, query: v.query }; render(true);
+      })];
+  }
+  if (v.mode === "read") {
+    const note = notes.find(n => n.id === v.id);
+    if (!note) { notesView = { mode: "list", query: "" }; return notesPage(); }
+    return [back("Zurück", toList), ...title(note.title, note.folder || "Notiz"), card("", markdown(note.text)),
+      note.own ? button("Ändern", () => { notesView = { mode: "edit", id: note.id, query: v.query }; render(true); })
+        : button("Etwas dazu notieren", () => { notesView = { mode: "edit", title: `Zu ${note.title}`, text: `[[${note.title}]]\n\n`, query: v.query }; render(true); }),
+      note.own && button("Löschen", async () => {
+        if (!confirm(`„${note.title}“ löschen?`)) return;
+        await notesStore("readwrite", store => { store.delete(note.id); }); await loadNotes(); toList();
+      }, "btn alt")];
+  }
+  const results = el("div", {});
+  const show = () => {
+    const found = findNotes(v.query);
+    results.replaceChildren(...found.slice(0, 60).map(n => {
+      const b = button("", () => { notesView = { mode: "read", id: n.id, query: v.query }; render(true); }, "note-row");
+      b.append(el("b", { textContent: n.title }), small(n.own ? "Vom Handy" : n.folder || "PC"));
+      return b;
+    }), ...(found.length > 60 ? [small(`${found.length - 60} weitere – such genauer.`)] : []),
+    ...(!found.length ? [card("", notes.length ? "Nichts gefunden." : "Noch keine Notizen. Lade unten das Paket vom PC.")] : []));
+  };
+  const search = el("input", { type: "search", value: v.query, placeholder: "Gedächtnis durchsuchen …" });
+  search.ariaLabel = "Notizen durchsuchen";
+  search.addEventListener("input", () => { v.query = search.value; show(); });
+  show();
+  const status = el("p", { className: "sub", role: "status" });
+  const file = el("input", { type: "file", multiple: true, accept: ".json,.md,.txt,application/json,text/markdown,text/plain", hidden: true });
+  file.addEventListener("change", async () => {
+    const chosen = [...file.files];
+    file.value = "";
+    if (!chosen.length) return;
+    status.textContent = "Wird eingelesen …";
+    try { const count = await importNotes(chosen); notesView = { mode: "list", query: "", message: `${count} Notizen geladen ✓` }; render(true); }
+    catch (error) { status.textContent = error.message || "Einlesen hat nicht geklappt."; }
+  });
+  if (v.message) { status.textContent = v.message; v.message = ""; }
+  const own = notes.filter(n => n.own).length;
+  return [back("Zurück", () => { notesView = null; render(true); }),
+    ...title("Gedächtnis", `${notes.length} Notizen · funktioniert ohne Internet`),
+    notesError && card("sand", notesError), search, button("＋ Neue Notiz", () => { notesView = { mode: "edit", query: v.query }; render(true); }),
+    results, label("Abgleich mit dem PC"),
+    card("", button("Notizen vom PC laden", () => { if (host.demo()) status.textContent = "In der Demo ausgeschaltet."; else file.click(); }, "btn alt"),
+      own > 0 && button(`${own} Handy-Notizen für Obsidian speichern`, sendNotesBack, "btn alt"), file, status,
+      small("Die Notizen bleiben auf diesem Gerät und werden nicht an die KI geschickt. Wer dein entsperrtes Handy hat, kann sie lesen."))];
+}
+
 
 const KEY = "meinweg-v1";
 const $ = id => document.getElementById(id);
@@ -1701,6 +1880,7 @@ function fiveMinutes(task) {
 function todayPage() {
   if (!state.me.done) return meQuestions();
   if (chatOpen) return chatPage();
+  if (notesView) return notesPage();
   const day = dayKey(), all = entries(day), open = all.filter(e => !e.done), has = key => state.me.struggles.includes(key);
   const light = state.lightDay === day, low = energyToday() === "low";
   const parts = [playerCard(host.profile().name, open.length), buddyCard(open, all), label("Heute zu tun")];
@@ -1734,7 +1914,8 @@ function todayPage() {
   if (open.length > 1) parts.push(button("Heute ist mir zu viel",
     () => { state.lightDay = day; save(); render(true); }, "quiet center"));
   parts.push(button("Zum Kalender", () => go("plan"), "btn alt"),
-    button(`💬 Frag ${buddyName()} (KI)`, () => { chatOpen = true; render(true); }, "btn alt"));
+    button(`💬 Frag ${buddyName()} (KI)`, () => { chatOpen = true; render(true); }, "btn alt"),
+    button("📓 Gedächtnis (Notizen)", () => { notesView = { mode: "list", query: "" }; render(true); }, "btn alt"));
   if (has("forget") && !state.settings.remind) parts.push(card("lav", el("p", { textContent: "Du vergisst manchmal Dinge. Soll ich dich erinnern, solange die App offen ist?" }),
     button("Erinnerungen einschalten", async () => {
       state.settings.remind = true; save();
@@ -2025,13 +2206,13 @@ const SAMPLE = () => clean({ me: { done: true, buddy: "fox", buddyName: "Flo" },
   food: { entries: [{ day: dayKey(), name: "Müsli mit Obst", kcal: 380, protein: 14, fiber: 8 }], water: { [dayKey()]: 750 }, steps: { [dayKey()]: 4200 } } });
 return {
   open(next) {
-    const moved = current !== next; current = next; run = null; wizard = null; openNode = null; openStage = 0; sportForm = null; sportRun = null; planDay = dayKey(); calMonth = ""; showAll = false; meForm = null; foodDraft = null; chatOpen = false; sportTab = "training"; applyAreas();
+    const moved = current !== next; current = next; run = null; wizard = null; openNode = null; openStage = 0; sportForm = null; sportRun = null; planDay = dayKey(); calMonth = ""; showAll = false; meForm = null; foodDraft = null; chatOpen = false; notesView = null; sportTab = "training"; applyAreas();
     render(); if (moved) intro(next && next !== "me" ? document.getElementById(next) : null);
   },
   render, ensure() { ensure(); render(); },
   dump: () => state,
   load(data) { if (Array.isArray(data?.tasks)) { state = clean(data); save(); render(); } },
-  reset() { state = clean(null); try { localStorage.removeItem(AI_STORE); } catch { /* nichts gespeichert */ } chat = null; save(); },
+  reset() { state = clean(null); try { localStorage.removeItem(AI_STORE); } catch { /* nichts gespeichert */ } chat = null; if (!host.demo()) { indexedDB.deleteDatabase(NOTES_DB); notes = null; } save(); },
   demo() { state = SAMPLE(); render(); },
 };
 }
