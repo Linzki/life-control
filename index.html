@@ -1,0 +1,2276 @@
+<!doctype html>
+<!-- © 2026 TinyRoom Studio. Alle Rechte vorbehalten. Kopieren, Weitergeben und
+     Weiterverkaufen ohne schriftliche Erlaubnis ist nicht gestattet. -->
+<html lang="de" data-locked data-style="spiel">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="author" content="TinyRoom Studio">
+<meta name="copyright" content="© 2026 TinyRoom Studio. Alle Rechte vorbehalten.">
+<meta name="theme-color" content="#e9e1ff">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="format-detection" content="telephone=no">
+<meta name="robots" content="noindex, nofollow">
+<link rel="apple-touch-icon" href="icon-180.png">
+<meta name="apple-mobile-web-app-title" content="Life Control">
+<title>Life Control</title>
+<style>
+:root { color-scheme:light; --bg:#f4f6f8; --card:#fff; --ink:#172033; --muted:#5d6779;
+  --line:#e2e7ee; --accent:#0f6b5c; --accent2:#14304a; --soft:#e7f3f0; --bad:#b3261e;
+  --badsoft:#fdecea; --spent:#eb6834; --saved:#2a78d6; --ease:cubic-bezier(.22,.8,.3,1);
+  --head1:#14304a; --head2:#0f6b5c; --on-accent:#fff; --field:#fff; --field-line:#cfd6e0;
+  --radius:16px; --button-radius:10px; --field-radius:10px;
+  --shadow:0 2px 10px rgba(23,32,51,.04); --heading:inherit }
+* { box-sizing:border-box; margin:0; padding:0 }
+body { font:16px/1.55 system-ui,-apple-system,'Segoe UI',sans-serif; background:var(--bg);
+  color:var(--ink); -webkit-tap-highlight-color:transparent }
+.wrap { max-width:880px; margin:0 auto;
+  padding:calc(16px + env(safe-area-inset-top)) 16px calc(100px + env(safe-area-inset-bottom)) }
+header { background:linear-gradient(135deg,var(--head1),var(--head2)); color:#fff;
+  border-radius:20px; padding:22px; box-shadow:0 12px 32px rgba(20,48,74,.22) }
+h1 { font-size:1.6rem; letter-spacing:-.02em }
+h2 { font-size:1.08rem; letter-spacing:-.01em; margin-bottom:4px }
+h3 { font-size:1rem }
+a { color:var(--accent) }
+.hero { margin-top:12px }
+.hero p { opacity:.9; font-size:.95rem }
+.hero .big { display:flex; flex-wrap:wrap; gap:6px 26px; margin-top:6px }
+.hero .big span { display:block; font-size:.8rem; opacity:.8 }
+.hero .big strong { font-size:1.7rem; font-variant-numeric:tabular-nums }
+.hero .bar { background:rgba(255,255,255,.22); height:20px; border-radius:10px }
+.hero .bar i { background:linear-gradient(90deg,rgba(255,255,255,.65),#fff); border-radius:10px }
+nav { display:flex; gap:6px; margin-top:14px; background:var(--card); border:1px solid var(--line);
+  border-radius:14px; padding:6px }
+nav button { flex:1; border:0; background:transparent; color:var(--muted); padding:10px 4px }
+nav button[aria-current=page] { background:var(--accent); color:var(--on-accent) }
+.view { animation:slide .4s var(--ease) }
+.card { background:var(--card); border:1px solid var(--line); border-radius:var(--radius); padding:20px;
+  margin-top:14px; box-shadow:var(--shadow) }
+.hint { color:var(--muted); font-size:.9rem; margin-bottom:12px }
+.stats { display:grid; grid-template-columns:repeat(auto-fit,minmax(170px,1fr)); gap:10px; margin-top:14px }
+.stat { background:var(--card); border:1px solid var(--line); border-left:4px solid var(--accent);
+  border-radius:12px; padding:10px 14px }
+.stat span { display:block; color:var(--muted); font-size:.8rem }
+.stat strong { font-size:1.35rem; font-variant-numeric:tabular-nums }
+.stat.bad { background:var(--badsoft); border-left-color:var(--bad) }
+.stat.bad strong { color:var(--bad) }
+input, textarea, select { font:inherit; color:inherit; background:var(--field); width:100%; min-width:0;
+  border:1px solid var(--field-line); border-radius:var(--field-radius); padding:10px 12px; transition:border .2s, box-shadow .2s }
+input:focus, textarea:focus, select:focus { outline:0; border-color:var(--accent);
+  box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 22%,transparent) }
+textarea { min-height:70px; resize:vertical }
+button, .shoplink { font:inherit; font-weight:600; cursor:pointer; border:1px solid var(--accent);
+  border-radius:var(--button-radius); background:var(--soft); color:var(--accent); padding:10px 16px;
+  transition:transform .15s var(--ease), box-shadow .2s, background .2s }
+button:hover, .shoplink:hover { box-shadow:0 4px 12px color-mix(in srgb,var(--accent) 22%,transparent) }
+button:active { transform:scale(.96) }
+button:focus-visible, a:focus-visible { outline:3px solid var(--accent); outline-offset:2px }
+button.primary { background:var(--accent); color:var(--on-accent) }
+button.del { border-color:var(--line); background:var(--field); color:var(--muted); padding:10px 13px }
+.shoplink { text-decoration:none; display:inline-block; font-size:.9rem; padding:8px 12px }
+.row { display:grid; grid-template-columns:1fr 140px auto; gap:8px; margin-bottom:8px }
+.row.plan { grid-template-columns:auto 1fr 140px auto; align-items:center }
+.row.plan input[type=checkbox] { width:22px; height:22px; accent-color:var(--accent) }
+.row.plan.done .text { text-decoration:line-through; color:var(--muted) }
+.box { border:1px solid var(--line); border-radius:12px; padding:14px; margin-bottom:10px }
+.enter { animation:enter .55s var(--ease) }
+@keyframes enter { 0% { opacity:0; transform:translateY(-10px) scale(.96); background:var(--soft) }
+  60% { opacity:1; background:var(--soft) } }
+.grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:8px; align-items:end }
+label { font-size:.8rem; color:var(--muted); display:block }
+.bar { height:10px; border-radius:5px; background:var(--soft); margin:12px 0 6px; overflow:hidden }
+.bar i { display:block; height:100%; width:0; border-radius:5px;
+  background:linear-gradient(90deg,var(--head1),var(--accent)); transition:width 1s var(--ease) }
+.info { font-size:.9rem }
+.total { text-align:right; font-weight:600; margin-top:8px }
+.actions { display:flex; flex-wrap:wrap; gap:8px; align-items:center }
+.empty { color:var(--muted); font-size:.9rem; margin-bottom:8px }
+.legend { display:flex; gap:16px; font-size:.85rem; margin-bottom:8px }
+.legend i { display:inline-block; width:12px; height:12px; border-radius:3px; margin-right:6px }
+.chart { display:flex; gap:10px; align-items:flex-end; height:210px; overflow-x:auto;
+  border-bottom:1px solid var(--line) }
+.col { flex:1; min-width:44px; height:100%; display:flex; flex-direction:column; justify-content:flex-end }
+.pair { display:flex; gap:2px; align-items:flex-end; height:180px; justify-content:center }
+.pair i { width:16px; border-radius:4px 4px 0 0; transform-origin:bottom; animation:grow .8s var(--ease) both }
+@keyframes grow { from { transform:scaleY(0) } }
+.col small { text-align:center; font-size:.75rem; color:var(--muted); padding:5px 0 }
+.scroll { overflow-x:auto }
+table { width:100%; border-collapse:collapse; font-size:.9rem }
+th, td { text-align:right; padding:8px 6px; border-bottom:1px solid var(--line);
+  font-variant-numeric:tabular-nums; white-space:nowrap }
+th:first-child, td:first-child { text-align:left }
+.badge { display:inline-block; font-size:.75rem; font-weight:600; border-radius:999px; padding:3px 10px;
+  background:var(--soft); color:var(--accent); margin:2px 4px 2px 0 }
+.badge.warn { background:#fff1d6; color:#7a4d00 } .badge.bad { background:var(--badsoft); color:var(--bad) }
+.tip { border-left:4px solid var(--accent); background:var(--soft); border-radius:8px;
+  padding:10px 14px; margin-bottom:8px; font-size:.93rem }
+.toy { width:150px; height:150px; margin:0 auto; display:block; overflow:visible }
+.toy .body { animation:bounce 1.8s var(--ease) infinite; transform-origin:60px 105px }
+.toy .eyes { animation:blink 3.2s infinite; transform-origin:60px 60px }
+.toy .shadow { animation:shadow 1.8s var(--ease) infinite; transform-origin:60px 112px }
+.toy .coin { animation:coin 2.4s ease-in infinite; opacity:0 }
+.toy .coin:nth-of-type(2) { animation-delay:.8s } .toy .coin:nth-of-type(3) { animation-delay:1.6s }
+.stage { animation:arrive .8s var(--ease) }
+@keyframes arrive { 0% { transform:translateY(-70px) scale(.3) rotate(-25deg); opacity:0 }
+  65% { transform:translateY(8px) scale(1.08) rotate(5deg); opacity:1 } }
+@keyframes bounce { 0%,100% { transform:translateY(0) scale(1.03,.97) } 50% { transform:translateY(-12px) rotate(-3deg) } }
+@keyframes blink { 0%,92%,100% { transform:scaleY(1) } 95% { transform:scaleY(.08) } }
+@keyframes shadow { 50% { transform:scaleX(.7); opacity:.5 } }
+@keyframes coin { 0% { opacity:0; transform:translateY(10px) } 30% { opacity:1 }
+  100% { opacity:0; transform:translateY(-45px) } }
+.time { font-size:2rem; font-weight:800; color:var(--accent); margin:6px 0 }
+.answers { display:grid; gap:8px; margin-top:16px }
+.item { display:flex; gap:14px; align-items:center; flex-wrap:wrap }
+.item .toy { width:76px; height:76px; margin:0 }
+.item .toy .coin { display:none }
+.item > div { flex:1; min-width:180px }
+.save { font-size:.9rem }
+#toast { position:fixed; left:50%; bottom:calc(24px + env(safe-area-inset-bottom)); z-index:20;
+  transform:translate(-50%,140px); opacity:0; background:var(--head1); color:#fff; border-radius:999px;
+  padding:10px 20px; font-weight:600; transition:transform .45s var(--ease), opacity .3s; pointer-events:none }
+#toast.on { transform:translate(-50%,0); opacity:1 }
+dialog { border:0; border-radius:22px; width:min(520px,calc(100vw - 24px)); padding:0; margin:auto;
+  color:var(--ink); background:var(--card); box-shadow:0 30px 80px rgba(10,20,35,.35) }
+dialog[open] { animation:pop .45s var(--ease) }
+dialog::backdrop { background:rgba(12,24,40,.6); backdrop-filter:blur(3px) }
+@keyframes pop { from { opacity:0; transform:translateY(30px) scale(.94) } }
+.sheet { padding:22px; max-height:calc(100dvh - 40px); overflow:auto; position:relative }
+.center { text-align:center }
+.progress { height:6px; background:var(--soft); border-radius:3px; overflow:hidden; margin-bottom:18px }
+.progress i { display:block; height:100%; background:var(--accent); transition:width .5s var(--ease) }
+.step { animation:slide .4s var(--ease) }
+.step.back { animation-name:slideback }
+@keyframes slide { from { opacity:0; transform:translateX(30px) } }
+@keyframes slideback { from { opacity:0; transform:translateX(-30px) } }
+.step h2 { font-size:1.35rem; margin-bottom:6px }
+.step label { margin-bottom:10px }
+.choices { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:12px }
+.choices button { background:var(--field); border-color:var(--field-line); color:var(--ink) }
+.choices button[aria-pressed=true] { background:var(--accent); border-color:var(--accent); color:var(--on-accent) }
+.between { display:flex; justify-content:space-between; gap:8px; margin-top:16px }
+.result { font-size:2rem; font-weight:700; color:var(--accent); margin:8px 0 }
+.result.bad { color:var(--bad) }
+.check { width:72px; height:72px; margin:0 auto 10px; display:block }
+.check * { fill:none; stroke:var(--accent); stroke-width:5; stroke-linecap:round;
+  stroke-dasharray:200; stroke-dashoffset:200; animation:draw .9s var(--ease) forwards }
+.check path { animation-delay:.35s }
+@keyframes draw { to { stroke-dashoffset:0 } }
+.confetti { position:fixed; top:-12px; width:9px; height:14px; border-radius:2px; pointer-events:none;
+  animation:fall linear forwards }
+@keyframes fall { to { transform:translateY(105vh) rotate(720deg) } }
+[hidden] { display:none !important }
+h1, h2, h3 { font-family:var(--heading) }
+header, .stat, .box, nav, dialog { border-radius:var(--radius) }
+/* Gemeinsam: Leuchtkanten, Glas, ein Lichtstreif beim Öffnen */
+html[data-style] header { position:relative; overflow:hidden }
+html[data-style] header::after { content:""; position:absolute; inset:0; pointer-events:none;
+  background:linear-gradient(105deg,transparent 40%,rgba(255,255,255,.18) 50%,transparent 60%);
+  transform:translateX(-120%); animation:sweep 1.6s .3s var(--ease) 1 forwards }
+@keyframes sweep { to { transform:translateX(120%) } }
+html[data-style] .stat strong, html[data-style] .time {
+  text-shadow:0 0 18px color-mix(in srgb,var(--accent) 40%,transparent) }
+html[data-style] .bar i { box-shadow:0 0 14px color-mix(in srgb,var(--accent) 80%,transparent) }
+html[data-style] button.primary, html[data-style] nav button[aria-current=page] {
+  box-shadow:0 0 18px color-mix(in srgb,var(--accent) 50%,transparent) }
+html[data-style] body { background-attachment:fixed }
+html[data-style] nav, html[data-style] .card, html[data-style] .stat { backdrop-filter:blur(10px) }
+
+/* Hologramm (klassisch): helles Glas mit schillerndem Licht */
+[data-style=klassisch] { --bg:#edf2fc; --line:#d3ddf2; --field-line:#bccbe8; --radius:20px;
+  --button-radius:14px; --field-radius:14px;
+  --shadow:0 0 0 1px color-mix(in srgb,var(--accent) 16%,transparent),0 14px 34px rgba(40,60,120,.12) }
+[data-style=klassisch] body { background-image:
+  radial-gradient(circle at 10% 0,color-mix(in srgb,var(--accent) 24%,transparent),transparent 42%),
+  radial-gradient(circle at 100% 30%,rgba(150,110,255,.2),transparent 42%),
+  radial-gradient(circle at 30% 100%,rgba(255,120,200,.14),transparent 45%) }
+[data-style=klassisch] .card, [data-style=klassisch] .stat, [data-style=klassisch] nav {
+  background:rgba(255,255,255,.82); border-color:#fff }
+[data-style=klassisch] header { background:linear-gradient(130deg,var(--head1),var(--head2) 65%,#4b2fa8);
+  box-shadow:0 0 30px color-mix(in srgb,var(--accent) 35%,transparent) }
+
+/* Neon Pop (verspielt): runde Formen, kräftiges Leuchten */
+[data-style=verspielt] { --bg:#f5efff; --line:#ddd0fa; --field-line:#c9b6f5; --radius:28px;
+  --button-radius:999px; --field-radius:18px; --heading:ui-rounded,'Trebuchet MS',system-ui,sans-serif;
+  --shadow:0 0 0 2px color-mix(in srgb,var(--accent) 28%,transparent),
+    0 10px 30px color-mix(in srgb,var(--accent) 24%,transparent) }
+[data-style=verspielt] body { background-image:
+  radial-gradient(color-mix(in srgb,var(--accent) 30%,transparent) 1.5px,transparent 2px),
+  radial-gradient(circle at 0 20%,rgba(0,220,255,.25),transparent 40%),
+  radial-gradient(circle at 100% 70%,rgba(255,60,200,.22),transparent 42%);
+  background-size:24px 24px,100% 100%,100% 100% }
+[data-style=verspielt] header { background:linear-gradient(120deg,#1b1450,var(--head2) 60%,#8a1c7c);
+  box-shadow:0 0 0 3px #fff,0 0 34px color-mix(in srgb,var(--accent) 55%,transparent) }
+[data-style=verspielt] button:hover { transform:translateY(-3px) scale(1.03) }
+
+/* Clean Tech (minimal): weiß, feine Linien, Messgeräte-Zahlen */
+[data-style=minimal] { --bg:#fbfcfe; --line:#dfe6ee; --radius:4px; --button-radius:3px; --field-radius:3px;
+  --shadow:none }
+[data-style=minimal] body { background-image:
+  linear-gradient(rgba(30,60,100,.055) 1px,transparent 1px),
+  linear-gradient(90deg,rgba(30,60,100,.055) 1px,transparent 1px); background-size:24px 24px }
+[data-style=minimal] header { background:#0b1120; border-bottom:3px solid var(--accent);
+  box-shadow:0 10px 26px color-mix(in srgb,var(--accent) 30%,transparent) }
+/* Eckmarken wie in einem Sucher */
+[data-style=minimal] .card { background:
+  linear-gradient(var(--accent),var(--accent)) top left/22px 2px no-repeat,
+  linear-gradient(var(--accent),var(--accent)) top left/2px 22px no-repeat,
+  linear-gradient(var(--accent),var(--accent)) bottom right/22px 2px no-repeat,
+  linear-gradient(var(--accent),var(--accent)) bottom right/2px 22px no-repeat, var(--card) }
+[data-style=minimal] .stat strong, [data-style=minimal] .hero strong, [data-style=minimal] .time {
+  font-family:ui-monospace,'Cascadia Mono',Consolas,monospace }
+
+/* Platin (elegant): Perlmutt, Metallkante, luftige Überschriften */
+[data-style=elegant] { --bg:#e9eaf1; --card:#fbfbfe; --field:#fff; --line:#cfd1de; --field-line:#bfc2d4;
+  --ink:#1c1e2b; --muted:#545870; --radius:14px; --button-radius:8px; --field-radius:8px;
+  --heading:'Bahnschrift','Segoe UI Light',system-ui,sans-serif;
+  --shadow:inset 0 1px 0 #fff,0 12px 32px rgba(40,42,70,.14) }
+[data-style=elegant] body { background-image:
+  linear-gradient(125deg,#f4f5fa 0,#dfe1ec 28%,#f6f6fb 48%,#d9dbe8 72%,#eef0f6 100%) }
+[data-style=elegant] h1, [data-style=elegant] h2 { letter-spacing:.06em; font-weight:600 }
+[data-style=elegant] header { background:linear-gradient(135deg,#11131f,var(--head1));
+  border:1px solid #c9cbe0; box-shadow:0 0 0 4px rgba(255,255,255,.7),0 18px 38px rgba(20,22,45,.35) }
+[data-style=elegant] .card { border-top:2px solid color-mix(in srgb,var(--accent) 60%,#c9cbe0) }
+
+/* Stealth (dunkel): tiefschwarz, Scanlinien, abgeschrägte Ecken */
+[data-style=dunkel] { color-scheme:dark; --bg:#050506; --card:#121216; --field:#0b0b0e; --line:#2b2b34;
+  --field-line:#3d3d4a; --ink:#f1f2f6; --muted:#a9abb9; --bad:#ff9d94; --badsoft:#4a2220;
+  --radius:4px; --button-radius:4px; --field-radius:4px; --shadow:none }
+[data-style=dunkel] body { background-image:
+  repeating-linear-gradient(0deg,rgba(255,255,255,.028) 0 1px,transparent 1px 4px),
+  radial-gradient(circle at 80% 0,color-mix(in srgb,var(--accent) 18%,transparent),transparent 45%) }
+[data-style=dunkel] header { background:linear-gradient(135deg,#0c0c10,var(--head1));
+  border-left:4px solid var(--accent);
+  clip-path:polygon(0 0,calc(100% - 26px) 0,100% 26px,100% 100%,26px 100%,0 calc(100% - 26px)) }
+[data-style=dunkel] .card { border-left:3px solid var(--accent) }
+[data-style=dunkel] button.primary { clip-path:polygon(10px 0,100% 0,100% calc(100% - 10px),calc(100% - 10px) 100%,0 100%,0 10px) }
+[data-style=dunkel] .stat strong, [data-style=dunkel] .hero strong, [data-style=dunkel] .time {
+  font-family:ui-monospace,'Cascadia Mono',Consolas,monospace }
+[data-style=dunkel] .toy { background:radial-gradient(circle,#e9eef5 55%,transparent 72%) }
+
+.swatches { display:flex; flex-wrap:wrap; gap:10px; align-items:center; margin-bottom:18px }
+.swatches button { width:44px; height:44px; padding:0; border-radius:50%; border:3px solid var(--card);
+  box-shadow:0 0 0 1px var(--field-line) }
+.swatches button[aria-pressed=true] { box-shadow:0 0 0 3px var(--ink); transform:scale(1.08) }
+.swatches label { display:flex; align-items:center; gap:8px }
+.swatches input[type=color] { width:56px; height:44px; padding:3px; cursor:pointer }
+.styles { display:grid; grid-template-columns:repeat(auto-fit,minmax(130px,1fr)); gap:10px }
+.styles button { display:block; text-align:left; padding:10px; border-radius:14px; background:var(--field);
+  border:2px solid var(--field-line); color:var(--ink) }
+.styles button[aria-pressed=true] { border-color:var(--accent); background:var(--soft) }
+.styles .mini { display:block; height:54px; padding:7px; margin-bottom:8px; border:1px solid #d8dde5 }
+.styles .mini i { display:block; height:16px; background:var(--head2) }
+.styles .mini b { display:block; height:7px; width:65%; margin-top:8px; background:var(--accent) }
+.styles .klassisch { background:linear-gradient(135deg,#e3f0ff,#f3e8ff); border-radius:12px; border-color:#fff }
+.styles .klassisch i, .styles .klassisch b { border-radius:6px }
+.styles .verspielt { background:#f5efff; border-radius:20px; box-shadow:0 0 10px color-mix(in srgb,var(--accent) 55%,transparent) }
+.styles .verspielt i, .styles .verspielt b { border-radius:99px }
+.styles .minimal { background:#fff; border-radius:2px }
+.styles .minimal i { background:#0b1120; border-bottom:3px solid var(--accent) }
+.styles .elegant { background:linear-gradient(125deg,#f6f6fb,#d9dbe8); border-radius:8px }
+.styles .elegant i { background:linear-gradient(135deg,#11131f,var(--head1)); border-radius:4px }
+.styles .dunkel { background:#050506; border-radius:2px; border-color:#2b2b34; border-left:3px solid var(--accent) }
+
+/* Futur: dunkles Cockpit mit Leuchtkanten */
+[data-style=futur] { color-scheme:dark; --bg:#070b17; --card:#121a30; --field:#0b1224; --line:#263256;
+  --field-line:#34446f; --ink:#eef4ff; --muted:#a9b7da; --bad:#ff9d94; --badsoft:#4a1f2e;
+  --radius:18px; --button-radius:12px; --field-radius:12px;
+  --shadow:0 0 0 1px color-mix(in srgb,var(--accent) 14%,transparent),0 12px 32px rgba(0,0,0,.45) }
+[data-style=futur] body { background-image:
+    linear-gradient(color-mix(in srgb,var(--accent) 7%,transparent) 1px,transparent 1px),
+    linear-gradient(90deg,color-mix(in srgb,var(--accent) 7%,transparent) 1px,transparent 1px),
+    radial-gradient(circle at 15% 0,color-mix(in srgb,var(--accent) 20%,transparent),transparent 45%);
+  background-size:34px 34px,34px 34px,100% 100%; background-attachment:fixed }
+[data-style=futur] header { position:relative; overflow:hidden;
+  background:linear-gradient(135deg,#0c1328,var(--head1));
+  border:1px solid color-mix(in srgb,var(--accent) 60%,transparent);
+  box-shadow:0 0 34px color-mix(in srgb,var(--accent) 28%,transparent) }
+/* Ein einziger Lichtstreif beim Öffnen, keine Dauerbewegung. */
+[data-style=futur] header::after { content:""; position:absolute; inset:0; pointer-events:none;
+  background:linear-gradient(105deg,transparent 40%,rgba(255,255,255,.16) 50%,transparent 60%);
+  transform:translateX(-120%); animation:sweep 1.6s .3s var(--ease) 1 forwards }
+@keyframes sweep { to { transform:translateX(120%) } }
+[data-style=futur] .card, [data-style=futur] .stat { backdrop-filter:blur(8px);
+  background:color-mix(in srgb,var(--card) 88%,transparent) }
+[data-style=futur] .stat strong, [data-style=futur] .time { text-shadow:0 0 18px color-mix(in srgb,var(--accent) 55%,transparent) }
+[data-style=futur] .bar i { background:linear-gradient(90deg,#7c5cff,var(--accent));
+  box-shadow:0 0 14px var(--accent) }
+[data-style=futur] header .bar i { background:linear-gradient(90deg,#a48bff,#7ff3ff) }
+[data-style=futur] button.primary, [data-style=futur] nav button[aria-current=page] {
+  box-shadow:0 0 18px color-mix(in srgb,var(--accent) 55%,transparent) }
+[data-style=futur] nav { background:color-mix(in srgb,var(--card) 92%,transparent); backdrop-filter:blur(10px) }
+[data-style=futur] .toy { background:radial-gradient(circle,#e9f2ff 55%,transparent 72%) }
+.styles .futur { background:#0b1224; border-radius:10px; border-color:var(--accent);
+  box-shadow:0 0 10px color-mix(in srgb,var(--accent) 60%,transparent) } .styles .futur i, .styles .futur b { border-radius:6px }
+
+/* Ruhig: sanft, hell, ohne Effekte */
+:root { --lav:color-mix(in srgb,#7b72b5 18%,var(--card)); --sand:color-mix(in srgb,#d8a54a 20%,var(--card)) }
+html[data-style=ruhig] { --bg:#f7f5f1; --line:#e2dfd7; --field-line:#d5d2ca; --radius:22px; --button-radius:16px;
+  --field-radius:14px; --shadow:none }
+html[data-style=ruhig] header { background:var(--head2); box-shadow:none }
+html[data-style=ruhig] header::after { display:none }
+html[data-style=ruhig] :is(.stat strong,.time) { text-shadow:none }
+html[data-style=ruhig] :is(.bar i,button.primary,nav button[aria-current=page]) { box-shadow:none }
+.styles .ruhig { background:#f7f5f1; border-radius:14px } .styles .ruhig i, .styles .ruhig b { border-radius:9px }
+
+/* Menü mit fünf Bereichen und Geld-Reiter */
+nav button { min-width:0 }
+.subnav { display:flex; gap:6px; margin-top:12px }
+.subnav button { flex:1; padding:8px 4px; font-size:.9rem }
+.subnav button[aria-pressed=true] { background:var(--accent); color:var(--on-accent) }
+html:is([data-view=today],[data-view=plan],[data-view=way],[data-view=sport],[data-view=settings]) header { display:none }
+
+/* ---------- Alltag ---------- */
+.alltag h1 { font-size:1.65rem; line-height:1.25 }
+.alltag .sub { color:var(--muted); font-size:.95rem; margin:2px 0 14px }
+.alltag > .card { margin-top:0; margin-bottom:12px }
+.alltag .card.green { background:var(--soft) } .alltag .card.lav { background:var(--lav) } .alltag .card.sand { background:var(--sand) }
+.alltag small { display:block; color:var(--muted); font-size:.85rem }
+.alltag .big strong { display:block; font-size:1.35rem; margin:4px 0 14px }
+.alltag label { margin-bottom:10px }
+.alltag .btn { display:block; width:100%; background:var(--accent); border-color:var(--accent); color:var(--on-accent) }
+.alltag .btn.alt { background:var(--card); border:2px solid var(--soft); color:var(--accent) }
+.alltag .btn + .btn, .alltag .card > .btn { margin-top:10px }
+.alltag .quiet { background:transparent; border-color:transparent; color:var(--muted); font-weight:500; padding:6px 10px }
+.alltag .item { display:flex; flex-wrap:nowrap; gap:12px; align-items:center; background:var(--card); border:2px solid var(--line);
+  border-radius:var(--radius); padding:8px 12px; margin-bottom:9px; animation:none }
+.alltag .item.now { border-color:var(--accent) }
+.alltag .item .check { width:44px; height:44px; flex:none; border-radius:50%; border:2px solid var(--field-line);
+  background:var(--card); padding:0; color:var(--on-accent) }
+.alltag .item.done .check { background:var(--accent); border-color:var(--accent) }
+.alltag .item .title { flex:1; min-width:0; text-align:left; background:none; border:0; color:var(--ink); padding:6px 0;
+  font-weight:500; box-shadow:none; overflow-wrap:anywhere }
+.alltag .item.done .title { color:var(--muted); text-decoration:line-through }
+.alltag .item em { font-style:normal; color:var(--muted); font-size:.85rem }
+.alltag .item .skip { display:block; padding-left:0; font-size:.85rem; text-decoration:underline }
+.alltag .dots { display:flex; gap:7px; margin-bottom:18px }
+.alltag .dots i { height:8px; flex:1; border-radius:8px; background:var(--line) } .alltag .dots i.on { background:var(--accent) }
+.alltag .pic { border-radius:var(--radius); background:var(--lav); display:grid; place-items:center; padding:24px; margin-bottom:14px }
+.alltag .pic svg { width:110px; height:110px; fill:none; stroke:var(--ink); stroke-width:1.5; stroke-linecap:round; stroke-linejoin:round }
+.alltag .time { font-size:3rem; text-align:center; text-shadow:none; color:var(--ink) }
+.alltag .days { display:grid; grid-template-columns:repeat(7,1fr); gap:5px; margin-bottom:14px }
+.alltag .days button { padding:6px 0; background:var(--card); border-color:var(--line); color:var(--ink); font-weight:500;
+  font-size:.85rem; line-height:1.3 }
+.alltag .days button[aria-pressed=true] { background:var(--accent); color:var(--on-accent) }
+.alltag .stage { display:flex; gap:14px; width:100%; text-align:left; background:var(--card); border:2px solid var(--line);
+  border-radius:var(--radius); padding:15px; margin-bottom:10px; font-weight:400; color:var(--ink); animation:none }
+.alltag .stage b { width:44px; height:44px; border-radius:14px; display:grid; place-items:center; background:var(--soft); flex:none }
+.alltag .stage.here { border-color:var(--accent) } .alltag .stage.here b { background:var(--accent); color:var(--on-accent) }
+.alltag .chips { display:flex; flex-wrap:wrap; gap:8px; margin-top:10px }
+.alltag textarea { width:100% }
+.alltag .stack { display:flex; height:24px; border-radius:9px; overflow:hidden; margin:10px 0; background:var(--line) }
+.alltag .key { display:grid; grid-template-columns:14px 1fr auto; gap:9px; align-items:center; font-size:.9rem; padding:3px 0 }
+.alltag .key i { width:14px; height:14px; border-radius:4px }
+.alltag .hud { display:flex; justify-content:space-between; font-weight:700 }
+.alltag .duration { font-size:1.25rem; font-weight:700; color:var(--accent); margin:10px 0 2px }
+.alltag .note { background:var(--sand); border-radius:12px; padding:9px 12px; margin-top:9px; font-size:.92rem }
+.alltag .pick { margin-bottom:9px } .alltag .pick[aria-pressed=true] { background:var(--soft); border-color:var(--accent) }
+.alltag .map { list-style:none; margin:6px 0 16px }
+.alltag .map li { position:relative; display:flex; align-items:center; gap:14px; padding:12px 6px; min-height:100px }
+.alltag .map li.right { flex-direction:row-reverse; text-align:right }
+.alltag .map li:not(.open):not(.goal)::after { content:""; position:absolute; left:42px; bottom:-14px; height:30px;
+  border-left:5px dotted var(--field-line) }
+.alltag .map li.right::after { left:auto !important; right:42px }
+.alltag .map li.done::after { border-color:var(--accent) !important }
+.alltag .map .node { width:74px; height:74px; flex:none; border-radius:50%; padding:0; font-size:1.5rem; font-weight:800;
+  background:var(--card); border:5px solid var(--line); color:var(--ink); display:grid; place-items:center; box-shadow:0 6px 0 var(--line) }
+.alltag .map .done .node { background:var(--accent); border-color:var(--accent); color:var(--on-accent); box-shadow:0 6px 0 var(--soft) }
+.alltag .map .here .node { border-color:var(--accent); box-shadow:0 0 0 7px var(--soft) }
+.alltag .map li > div { flex:1 }
+.alltag .map li.open { display:block; min-height:0; padding:0 }
+.alltag .map li.goal .node { background:var(--sand); font-size:2rem }
+.alltag .cheer { text-align:center; font-weight:700; font-size:1.15rem }
+
+/* Gut lesbar und leicht zu treffen */
+button, input, select { min-height:46px }
+h2 { font-size:1.18rem }
+
+/* Nächster Schritt */
+.next { border:2px solid var(--accent) }
+.next small { display:block; color:var(--accent); font-weight:700; font-size:.8rem; margin-bottom:2px }
+.next h2 { font-size:1.35rem; margin-bottom:12px }
+.next > button { width:100%; font-size:1.05rem; padding:14px }
+.level { margin-top:16px; font-size:.85rem; color:var(--muted) }
+.level .bar { margin:6px 0 0 }
+
+/* Einklappbare Einstellungen */
+details.fold { padding:0; overflow:hidden }
+details.fold summary { display:flex; align-items:center; gap:12px; cursor:pointer; list-style:none;
+  padding:18px 20px; min-height:64px }
+details.fold summary::-webkit-details-marker { display:none }
+details.fold summary h2 { flex:1; margin:0 }
+details.fold summary::before { content:""; width:12px; height:12px; flex:none; border-radius:4px;
+  background:var(--accent); box-shadow:0 0 12px color-mix(in srgb,var(--accent) 70%,transparent) }
+details.fold summary::after { content:"+"; font-size:1.6rem; color:var(--accent); transition:transform .25s var(--ease) }
+details.fold[open] summary::after { transform:rotate(45deg) }
+details.fold[open] { border-color:var(--accent) }
+.fold-body { padding:0 20px 20px; animation:enter .3s var(--ease) }
+.switch { display:flex; gap:14px; align-items:center; font-size:1rem; color:var(--ink); padding:10px 0; cursor:pointer }
+.switch input { width:52px; height:30px; min-height:30px; flex:none; appearance:none; border-radius:99px;
+  padding:0; position:relative; cursor:pointer; background:var(--field-line) }
+.switch input::after { content:""; position:absolute; width:22px; height:22px; top:3px; left:3px; border-radius:50%;
+  background:#fff; transition:transform .2s var(--ease) }
+.switch input:checked { background:var(--accent); border-color:var(--accent) }
+.switch input:checked::after { transform:translateX(22px) }
+.switch small { display:block; color:var(--muted) }
+[data-focus] #home [data-block] { display:none }
+[data-calm] *, [data-calm] *::before, [data-calm] *::after { animation-duration:.01ms !important;
+  animation-delay:0s !important; animation-iteration-count:1 !important; transition-duration:.01ms !important }
+
+footer { text-align:center; font-size:.78rem; color:var(--muted); padding:22px 16px 110px }
+.appicon { border-radius:20px; margin-bottom:14px; box-shadow:0 8px 24px rgba(0,0,0,.25) }
+.steps { list-style:none; counter-reset:step; text-align:left; margin-top:16px }
+.steps li { display:flex; gap:12px; align-items:center; padding:10px 0 }
+.steps li::before { counter-increment:step; content:counter(step); width:32px; height:32px; flex:none;
+  display:grid; place-items:center; border-radius:50%; background:var(--accent); color:var(--on-accent); font-weight:700 }
+
+html[data-locked] .wrap, html[data-locked] #toast { display:none }
+#lock { min-height:100dvh; display:grid; place-items:center; padding:20px 14px }
+#lock .sheet { width:min(520px,100%); max-height:none; background:var(--card); border:1px solid var(--line);
+  border-radius:var(--radius); box-shadow:var(--shadow) }
+#lock h1 { margin-bottom:8px }
+.code { font:800 1.7rem ui-monospace,'Cascadia Mono',Consolas,monospace; letter-spacing:.08em;
+  color:var(--accent); margin:6px 0 10px; user-select:all; overflow-wrap:anywhere }
+#lock textarea { font-family:ui-monospace,Consolas,monospace; font-size:.85rem; margin:6px 0 12px }
+#lock button { width:100% }
+
+/* Auf den Unterseiten nur ein schmaler Zielbalken */
+html[data-view]:not([data-view=home]) header { padding:14px 18px }
+html[data-view]:not([data-view=home]) header h1 { font-size:1.15rem }
+html[data-view]:not([data-view=home]) :is(#heroText,#heroNumbers,#heroPercent) { display:none }
+html[data-view]:not([data-view=home]) header .hero { margin-top:0 }
+html[data-view]:not([data-view=home]) header .bar { height:8px; margin:8px 0 0 }
+h3.group { margin:24px 4px 0; font-size:.85rem; color:var(--muted); text-transform:uppercase; letter-spacing:.1em }
+nav button { display:flex; flex-direction:column; align-items:center; gap:3px; line-height:1.2 }
+nav svg { width:22px; height:22px; fill:none; stroke:currentColor; stroke-width:2; stroke-linecap:round;
+  stroke-linejoin:round }
+#demoBar { position:sticky; top:0; z-index:9; display:flex; justify-content:space-between; align-items:center;
+  gap:10px; padding:8px 14px; margin-bottom:10px; border-radius:var(--radius); background:#ffe27a; color:#3a2b00;
+  font-weight:700 }
+#demoBar button { min-height:36px; padding:6px 12px; background:#fff; border-color:#fff; color:#3a2b00 }
+#lock #demoStart { margin-top:12px }
+@media print { #demoBar { display:none } }
+
+.choices.tall { display:grid; gap:8px }
+.choices.tall button { text-align:left }
+
+@media (max-width:560px) {
+  .stats { grid-template-columns:1fr 1fr }
+  .stat { padding:8px 10px } .stat strong { font-size:1.1rem }
+  .row { grid-template-columns:1fr 100px auto }
+  .row.plan { grid-template-columns:auto 1fr auto }
+  .row.plan .money { grid-column:2 }
+  /* Monatstabelle: jede Zeile als eigener Block, nichts wird abgeschnitten. */
+  #monthTable table, #monthTable tbody { display:block }
+  #monthTable thead { display:none }
+  #monthTable tr { display:grid; grid-template-columns:1fr 1fr auto; gap:4px 10px; align-items:center;
+    padding:12px 0; border-bottom:1px solid var(--line) }
+  #monthTable td { border:0; padding:0; text-align:left; white-space:normal }
+  #monthTable td:nth-child(1) { grid-area:1 / 1 / 2 / 3; font-weight:700 }
+  #monthTable td:nth-child(2) { grid-area:2 / 1 } #monthTable td:nth-child(3) { grid-area:2 / 2 / 3 / 4 }
+  #monthTable td:nth-child(4) { grid-area:3 / 1 / 4 / 4 } #monthTable td:nth-child(5) { grid-area:1 / 3 }
+  #monthTable td[data-label]::before { content:attr(data-label); display:block; font-size:.75rem; color:var(--muted) }
+  nav { position:fixed; left:8px; right:8px; bottom:calc(8px + env(safe-area-inset-bottom)); z-index:10;
+    box-shadow:0 8px 28px rgba(23,32,51,.2) }
+  nav button { font-size:.72rem; padding:7px 0 }
+  #toast { bottom:calc(90px + env(safe-area-inset-bottom)) }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration:.01ms !important; animation-delay:0s !important;
+    transition-duration:.01ms !important } }
+@media print { body { background:#fff } nav, button, #toast { display:none } .card, .box { break-inside:avoid } }
+/* ================= Sportplan und Spielbausteine (alle Stile) ================= */
+.alltag .week { display:grid; grid-template-columns:repeat(7,1fr); gap:5px; margin:10px 0 8px }
+.alltag .week div { text-align:center; border-radius:12px; border:2px dashed var(--line); padding:5px 0 }
+.alltag .week .train { border-style:solid; background:var(--soft) }
+.alltag .week .done { background:var(--accent); border-color:var(--accent); color:var(--on-accent) }
+.alltag .week .done small { color:inherit }
+.alltag .week .now { outline:3px solid var(--accent); outline-offset:1px }
+.alltag .week b { display:block; font-size:1.05rem; min-height:1.6em }
+.alltag .move { display:flex; justify-content:space-between; gap:10px; padding:7px 0; border-bottom:1px dashed var(--line); font-size:.93rem }
+.alltag .move em { font-style:normal; color:var(--muted); text-align:right; white-space:nowrap; font-size:.83rem }
+.alltag .card > .move:last-of-type { border-bottom:0 }
+.alltag details.day summary { cursor:pointer; font-weight:700 }
+.alltag details.day[open] summary { margin-bottom:8px }
+.alltag .chips button[aria-pressed=true] { background:var(--accent); color:var(--on-accent) }
+.alltag .card.green .btn + .btn { margin-top:10px }
+.alltag .mascot { font-size:3.4rem; text-align:center }
+.alltag .orb { --done:0; width:180px; height:180px; margin:4px auto 14px; border-radius:50%; display:grid; place-items:center;
+  background:radial-gradient(circle,var(--card) 58%,transparent 59%),
+    conic-gradient(var(--accent) calc(var(--done)*1turn),var(--line) 0) }
+.alltag .orb .time { margin:0; font-size:2.6rem }
+
+.player { position:relative; display:grid; grid-template-columns:76px 1fr; gap:4px 12px; align-items:center;
+  border-radius:var(--radius); border:1px solid var(--line); background:var(--card); padding:14px; margin-bottom:12px; overflow:hidden }
+.alltag .player .sub { margin:0 }
+.player h1 { overflow-wrap:anywhere }
+.player .stats-line { grid-column:1 / -1; display:flex; flex-wrap:wrap; gap:6px; margin-top:8px }
+.player .stats-line span { font-size:.78rem; font-weight:700; border-radius:99px; padding:3px 10px; background:var(--soft) }
+.player .bar { grid-column:1 / -1; height:14px; border-radius:9px; margin:6px 0 0 }
+.avatar svg { width:76px; height:76px; overflow:visible }
+.avatar .ring { fill:none; stroke:var(--accent); opacity:.45; stroke-width:2.5; stroke-dasharray:14 8; animation:orbit 3s linear infinite }
+.avatar rect { fill:var(--soft); stroke:var(--accent); stroke-width:2.5 }
+.avatar .eyes circle { fill:var(--accent) } .avatar .eyes { animation:blink 3.4s infinite; transform-origin:40px 39px }
+.avatar path, .avatar line { fill:none; stroke:var(--accent); stroke-width:2.5; stroke-linecap:round }
+.avatar .light { fill:var(--accent); animation:glow 1.6s ease-in-out infinite }
+.avatar .bot { animation:float 3s ease-in-out infinite }
+
+.spark { position:fixed; z-index:50; width:9px; height:9px; border-radius:50%; pointer-events:none;
+  animation:spark .85s ease-out forwards }
+.gain { position:fixed; z-index:51; transform:translate(-50%,-50%); pointer-events:none; font-size:1.3rem; color:var(--accent);
+  background:#fff; border-radius:99px; padding:4px 14px; box-shadow:0 0 0 3px var(--accent),0 8px 24px rgba(40,30,80,.25);
+  animation:rise 1.25s ease-out forwards }
+@keyframes spark { to { transform:translate(var(--x),var(--y)) scale(0); opacity:0 } }
+@keyframes rise { 15% { transform:translate(-50%,-110%) scale(1.15) } to { transform:translate(-50%,-320%); opacity:0 } }
+@keyframes orbit { to { stroke-dashoffset:-44 } }
+@keyframes glow { 50% { opacity:.45; r:5 } }
+@keyframes float { 50% { transform:translateY(-5px) } }
+
+/* ================= Stil „Pastell-Spiel“: eine klare Farbe je Bereich ================= */
+html[data-style=spiel] { --accent:#a34d17 !important; --soft:#ffe3cd !important; --bg:#fff5ee; --line:#f2dccb; --field-line:#e6cbb6 }
+html[data-style=spiel][data-view=plan] { --accent:#1d60aa !important; --soft:#d8e9ff !important; --bg:#f0f6ff; --line:#d3e2f5; --field-line:#bcd2ee }
+html[data-style=spiel][data-view=way] { --accent:#176c4c !important; --soft:#cfefe0 !important; --bg:#eef9f4; --line:#cfe8dc; --field-line:#b3dac8 }
+html[data-style=spiel][data-view=sport] { --accent:#a92d65 !important; --soft:#ffd9e8 !important; --bg:#fff1f6; --line:#f5d3e0; --field-line:#ecbbd0 }
+html[data-style=spiel]:is([data-view=home],[data-view=stats],[data-view=worth]) { --accent:#775a07 !important; --soft:#fbe9a6 !important; --bg:#fffaeb; --line:#efe2b4; --field-line:#e0cd8e }
+html[data-style=spiel][data-view=settings] { --accent:#5c42b3 !important; --soft:#e4dbff !important; --bg:#f5f2ff; --line:#ded5f7; --field-line:#c9bcf0 }
+html[data-style=spiel] { --on-accent:#fff !important; --head1:var(--accent) !important; --head2:var(--accent) !important;
+  --accent2:var(--accent) !important; --ink:#262336; --muted:#5d5970; --lav:var(--soft); --sand:var(--soft);
+  --radius:22px; --button-radius:16px; --field-radius:14px;
+  --shadow:0 4px 0 color-mix(in srgb,var(--accent) 12%,transparent),0 10px 24px color-mix(in srgb,var(--accent) 9%,transparent);
+  background:var(--bg); transition:background-color .35s }
+html[data-style=spiel] body { background:transparent; color:var(--ink) }
+/* Zwei sanfte Lichtflecken und ein ziehendes Raster, alles in der Bereichsfarbe */
+html[data-style=spiel] body::before { content:""; position:fixed; inset:-30vmax; z-index:-2; pointer-events:none;
+  background:radial-gradient(circle at 28% 28%,var(--soft) 0,transparent 24%),radial-gradient(circle at 72% 72%,var(--soft) 0,transparent 22%);
+  animation:aurora 18s ease-in-out infinite alternate }
+html[data-style=spiel] body::after { content:""; position:fixed; inset:-40px 0 0; z-index:-1; pointer-events:none; opacity:.09;
+  background:linear-gradient(var(--accent) 1px,transparent 1px) 0 0/40px 40px,linear-gradient(90deg,var(--accent) 1px,transparent 1px) 0 0/40px 40px;
+  -webkit-mask-image:linear-gradient(transparent 55%,#000); mask-image:linear-gradient(transparent 55%,#000); animation:grid 6s linear infinite }
+@keyframes aurora { to { transform:translate(6vmax,-4vmax) rotate(12deg) } }
+@keyframes grid { to { transform:translateY(40px) } }
+
+/* Karten: ruhig weiß, gleiche Abstände */
+html[data-style=spiel] :is(.card,.stat,.player),
+html[data-style=spiel] .alltag .card:is(.green,.sand,.lav),
+html[data-style=spiel] #lock .sheet { background:#fff; border:1px solid var(--line); box-shadow:var(--shadow) }
+html[data-style=spiel] .stat { border-left:5px solid var(--accent) }
+html[data-style=spiel] .stat.bad { background:var(--badsoft); border-left-color:var(--bad) }
+html[data-style=spiel] .alltag .card.sand { background:var(--soft) }
+
+/* Die wichtigste Karte der Seite: getönt, mit wanderndem Leuchtrand */
+@property --turn { syntax:"<angle>"; inherits:false; initial-value:0deg }
+html[data-style=spiel] :is(.alltag .card.big,#startCard) { border:3px solid transparent;
+  background:linear-gradient(180deg,#fff 20%,color-mix(in srgb,var(--soft) 55%,#fff)) padding-box,
+    conic-gradient(from var(--turn),var(--soft),var(--accent),var(--soft) 45%,var(--soft)) border-box;
+  animation:turn 5s linear infinite }
+@keyframes turn { to { --turn:360deg } }
+
+/* Seitenkopf: auf jeder Seite gleich aufgebaut, in der Bereichsfarbe */
+html[data-style=spiel] :is(.banner,.player,header) { position:relative; overflow:hidden; border-radius:28px; border:0;
+  background:var(--soft); color:var(--ink); box-shadow:var(--shadow); animation:none }
+html[data-style=spiel] :is(.banner,.player,header)::before { content:""; position:absolute; width:190px; height:190px;
+  right:-60px; top:-80px; border-radius:50%; border:22px solid rgba(255,255,255,.55); pointer-events:none;
+  animation:float 6s ease-in-out infinite }
+html[data-style=spiel] header::after { display:none }
+html[data-style=spiel] header > * { position:relative }
+html[data-style=spiel] header .hero .bar { background:#fff }
+html[data-style=spiel] header .hero .bar i { background:var(--accent) }
+html[data-style=spiel] header h1 { color:var(--accent) }
+
+/* Knöpfe: eine Farbe, dick, mit Lichtstreifen */
+html[data-style=spiel] :is(button.primary,.alltag .btn) { position:relative; overflow:hidden; border:0; color:#fff; background:var(--accent);
+  box-shadow:0 4px 0 color-mix(in srgb,var(--accent) 65%,#000) }
+html[data-style=spiel] :is(button.primary,.alltag .btn)::after { content:""; position:absolute; inset:0; pointer-events:none;
+  background:linear-gradient(110deg,transparent 35%,rgba(255,255,255,.35) 50%,transparent 65%); transform:translateX(-120%);
+  animation:shine 5s ease-in-out infinite }
+html[data-style=spiel] .alltag .btn.alt { background:#fff; color:var(--accent); border:2px solid var(--soft); box-shadow:0 4px 0 var(--soft) }
+html[data-style=spiel] .alltag .btn.alt::after { display:none }
+html[data-style=spiel] .alltag .btn.pick[aria-pressed=true] { background:var(--soft); border-color:var(--accent) }
+html[data-style=spiel] :is(button.primary,.alltag .btn):active { transform:translateY(3px); box-shadow:0 1px 0 color-mix(in srgb,var(--accent) 65%,#000) }
+html[data-style=spiel] .alltag .chips button { border-color:var(--soft) }
+@keyframes shine { 0%,55% { transform:translateX(-120%) } 85%,100% { transform:translateX(120%) } }
+
+html[data-style=spiel] .bar { background:var(--soft) }
+html[data-style=spiel] :is(.alltag .bar,.player .bar,#home .card .bar) { height:12px; border-radius:9px }
+html[data-style=spiel] .alltag .player .bar { background:#fff }
+html[data-style=spiel] :is(.alltag .bar,.player .bar,#home .card .bar) i { border-radius:9px;
+  background:repeating-linear-gradient(115deg,rgba(255,255,255,.35) 0 8px,transparent 8px 16px),var(--accent);
+  background-size:36px 100%,100% 100%; animation:stripes 1.4s linear infinite }
+@keyframes stripes { to { background-position:36px 0,0 0 } }
+
+html[data-style=spiel] .alltag .item { border:1px solid var(--line); background:#fff; box-shadow:0 3px 0 color-mix(in srgb,var(--accent) 10%,transparent) }
+html[data-style=spiel] .alltag .item.now { border:2px solid var(--accent) }
+html[data-style=spiel] .alltag .item.done { background:var(--soft) }
+html[data-style=spiel] .alltag .item.done .check { animation:pop-check .45s ease }
+@keyframes pop-check { 50% { transform:scale(1.3) rotate(12deg) } }
+
+html[data-style=spiel] .alltag .map .node { animation:float 3.4s ease-in-out infinite }
+html[data-style=spiel] .alltag .map li:nth-child(even) .node { animation-delay:-1.7s }
+html[data-style=spiel] .alltag .map .here .node { animation:beacon 1.8s ease-out infinite }
+@keyframes beacon { from { box-shadow:0 0 0 0 color-mix(in srgb,var(--accent) 55%,transparent) } to { box-shadow:0 0 0 18px transparent } }
+html[data-style=spiel] .alltag .mascot { animation:float 3s ease-in-out infinite }
+html[data-style=spiel] .alltag .orb.go { animation:breathe 2s ease-in-out infinite }
+@keyframes breathe { 50% { transform:scale(1.04); filter:drop-shadow(0 0 16px var(--accent)) } }
+
+/* Menü: ruhig; nur der aktuelle Bereich leuchtet in seiner Farbe */
+html[data-style=spiel] nav { background:rgba(255,255,255,.93); border:1px solid var(--line); border-radius:26px; backdrop-filter:blur(12px);
+  box-shadow:0 8px 28px color-mix(in srgb,var(--accent) 20%,transparent) }
+html[data-style=spiel] nav button { color:#6a6680 }
+html[data-style=spiel] nav button svg { box-sizing:content-box; width:20px; height:20px; padding:4px 7px; border-radius:12px }
+html[data-style=spiel] nav button[aria-current=page] { background:var(--soft); color:var(--accent); box-shadow:none }
+html[data-style=spiel] nav button[aria-current=page] svg { background:#fff; animation:jump .5s ease }
+@keyframes jump { 45% { transform:translateY(-7px) scale(1.15) } }
+
+/* Geld und Mehr: Reiter, Listen und Farben passend zur Seite */
+html[data-style=spiel] .subnav { padding:5px; background:#fff; border:1px solid var(--line); border-radius:20px }
+html[data-style=spiel] .subnav button { border:0; background:transparent }
+html[data-style=spiel] .subnav button[aria-pressed=true] { background:var(--accent); color:#fff }
+html[data-style=spiel] #settings details.fold { margin-top:0; border-radius:0; box-shadow:none; border-bottom-width:0 }
+html[data-style=spiel] #settings :not(details.fold) + details.fold { border-radius:var(--radius) var(--radius) 0 0 }
+html[data-style=spiel] #settings details.fold:not(:has(+ details.fold)) { border-radius:0 0 var(--radius) var(--radius); border-bottom-width:1px }
+html[data-style=spiel] #settings :not(details.fold) + details.fold:not(:has(+ details.fold)) { border-radius:var(--radius) }
+html[data-style=spiel] #swatches > * { display:none }
+html[data-style=spiel] #swatches::after { content:"Im Pastell-Spiel hat jeder Bereich seine eigene Farbe."; font-size:.9rem; color:var(--muted); grid-column:1 / -1 }
+
+.styles .spiel { background:#fff5ee; border-radius:16px; border-color:#f2dccb }
+.styles .spiel i { background:#ffe3cd } .styles .spiel b { background:#a34d17 } .styles .spiel i, .styles .spiel b { border-radius:99px }
+
+/* ================= Aufbau der Seiten (alle Stile) ================= */
+.banner { display:flex; align-items:center; gap:14px; padding:18px; margin-bottom:14px; border-radius:var(--radius); background:var(--soft) }
+.banner .ic { position:relative; width:54px; height:54px; flex:none; display:grid; place-items:center; border-radius:18px; background:#fff; color:var(--accent) }
+.banner svg { width:30px; height:30px; fill:none; stroke:currentColor; stroke-width:2; stroke-linecap:round; stroke-linejoin:round }
+.banner > div { min-width:0; position:relative }
+.alltag .banner h1, #settings .banner h1 { color:var(--accent); font-size:1.5rem; overflow-wrap:anywhere }
+.banner .sub, .alltag .banner .sub { margin:0; color:var(--ink); font-size:.92rem }
+.alltag .player h1 { color:var(--accent) }
+.player > * { position:relative }
+.player .stats-line span { background:#fff }
+h2.label { margin:22px 4px 10px; font-size:.8rem; text-transform:uppercase; letter-spacing:.09em; color:var(--accent) }
+.alltag .center { display:block; margin:0 auto }
+/* Jedes Thema trägt überall die Farbe seines Bereichs */
+[data-to=plan] { --c:#1d60aa; --s:#d8e9ff } [data-to=sport] { --c:#a92d65; --s:#ffd9e8 } [data-to=way] { --c:#176c4c; --s:#cfefe0 }
+[data-to=home] { --c:#775a07; --s:#fbe9a6 } [data-to=settings] { --c:#5c42b3; --s:#e4dbff }
+.alltag .topics { display:flex; flex-wrap:wrap; gap:7px; margin-bottom:12px }
+.alltag .topics span { background:var(--s); color:var(--c); border-radius:99px; padding:4px 13px; font-size:.85rem; font-weight:700 }
+.alltag .entry { display:flex; align-items:center; gap:11px; padding:11px 12px; margin-bottom:9px; background:var(--s); color:#262336;
+  border:2px solid var(--s); border-left:7px solid var(--c); border-radius:20px }
+.alltag .entry.next { border-color:var(--c); box-shadow:0 5px 0 color-mix(in srgb,var(--c) 22%,transparent) }
+.alltag .entry .ic { width:40px; height:40px; flex:none; display:grid; place-items:center; border-radius:14px; background:#fff; color:var(--c) }
+.alltag .entry svg { width:22px; height:22px; fill:none; stroke:currentColor; stroke-width:2; stroke-linecap:round; stroke-linejoin:round }
+.alltag .entry .body { flex:1; min-width:0 }
+.alltag .entry .text { display:block; width:100%; text-align:left; background:none; border:0; padding:2px 0; color:inherit; box-shadow:none;
+  overflow-wrap:anywhere }
+.alltag .entry .text small { color:var(--c); font-weight:700; font-size:.76rem }
+.alltag .entry .text b { display:block; line-height:1.35 }
+.alltag .entry.done { opacity:.65 } .alltag .entry.done .text b { text-decoration:line-through }
+.alltag .entry :is(.check,.go) { width:42px; height:42px; min-height:42px; flex:none; padding:0; border-radius:50%; background:#fff;
+  border:2px solid var(--c); color:var(--c); font-size:1.25rem; font-weight:800; box-shadow:none }
+.alltag .entry .go { border-color:transparent }
+.alltag .entry.done :is(.check,.go) { background:var(--c); color:#fff }
+.alltag .entry .extra { display:flex; flex-wrap:wrap; column-gap:14px }
+.alltag .entry .extra button { min-height:30px; padding:2px 0; font-size:.82rem; text-decoration:underline; box-shadow:none; color:var(--c) }
+
+/* Monatsansicht */
+.alltag .calendar { padding:14px 10px }
+.alltag .calendar .head { display:flex; align-items:center; justify-content:space-between; margin-bottom:10px }
+.alltag .calendar .turn { width:42px; height:42px; padding:0; border-radius:14px; font-size:1.4rem; box-shadow:none }
+.alltag .month { display:grid; grid-template-columns:repeat(7,minmax(0,1fr)); gap:3px; text-align:center }
+.alltag .month > span { font-size:.72rem; color:var(--muted); padding-bottom:3px }
+.alltag .month button { min-width:0; min-height:46px; padding:3px 0; display:flex; flex-direction:column; align-items:center; justify-content:center;
+  gap:3px; border:2px solid transparent; border-radius:13px; background:transparent; color:var(--ink); box-shadow:none }
+.alltag .month button b { font-size:.92rem; font-weight:600; line-height:1.2 }
+.alltag .month button.today { border-color:var(--accent) }
+.alltag .month button[aria-pressed=true] { background:var(--accent); color:var(--on-accent) }
+.alltag .dots-row { display:flex; gap:2px; height:7px }
+.alltag .dots-row i { width:7px; height:7px; border-radius:50%; background:var(--c) }
+.alltag .month [aria-pressed=true] .dots-row { background:#fff; border-radius:9px; padding:1px 3px; height:9px }
+.alltag .legend-row { justify-content:center; margin:12px 0 0 }
+.alltag .legend-row span { font-size:.75rem; padding:3px 9px }
+.alltag details.add summary { cursor:pointer; font-weight:700; color:var(--accent) }
+.alltag details.add[open] summary { margin-bottom:12px }
+.alltag .moods { display:grid; grid-template-columns:repeat(3,1fr); gap:6px; margin:6px 0 14px }
+.alltag .moods button { padding:8px 2px; font-size:.9rem; background:#fff; border:2px solid var(--line); color:var(--ink) }
+.alltag .moods button[aria-pressed=true] { background:var(--soft); border-color:var(--accent) }
+.alltag .days-list { padding-top:4px; padding-bottom:4px }
+.alltag details.day { padding:13px 0 } .alltag details.day + details.day { border-top:1px solid var(--line) }
+
+/* Persönlich: Begleiter */
+html[data-off~=way] nav [data-view=way], html[data-off~=sport] nav [data-view=sport], html[data-off~=home] nav [data-view=home] { display:none }
+.avatar .skin { fill:var(--soft); stroke:var(--accent); stroke-width:2.5; stroke-linejoin:round }
+.avatar circle:not(.light) { stroke:var(--accent) }
+.avatar .bot > circle:not(.light) { fill:#fff; stroke-width:2.5 }
+.alltag .bubble { position:relative; background:var(--soft); border-radius:18px; padding:11px 14px; font-weight:600 }
+.alltag .bubble small { color:var(--accent); font-weight:800 }
+.alltag .bubble span { display:block }
+.alltag .buddy-card .moods { margin-bottom:0 }
+.alltag .buddy-card > small { margin-top:12px }
+.alltag .buddy-card > .quiet { margin-top:6px; padding-left:0 }
+.alltag .buddies { display:grid; grid-template-columns:1fr 1fr; gap:9px; margin-bottom:12px }
+.alltag .buddy { display:flex; flex-direction:column; align-items:center; gap:4px; padding:10px; background:#fff; border:2px solid var(--line);
+  border-radius:18px; color:var(--ink); box-shadow:none }
+.alltag .buddy[aria-pressed=true] { border-color:var(--accent); background:var(--soft) }
+
+/* iPhone: kein Hineinzoomen in Felder, nichts unter Uhr oder Home-Balken */
+@supports (-webkit-touch-callout:none) { input, select, textarea { font-size:16px !important } }
+button, summary { touch-action:manipulation; -webkit-user-select:none; user-select:none }
+nav { -webkit-backdrop-filter:blur(12px) }
+#demoBar { top:env(safe-area-inset-top) }
+#lock { padding-top:calc(20px + env(safe-area-inset-top)); padding-bottom:calc(20px + env(safe-area-inset-bottom)) }
+
+/* Anmeldung */
+#lock #lockForm button { margin-top:12px }
+
+/* Mehr: Schalter stehen rechts in einer Flucht */
+.alltag .switch { display:flex; justify-content:space-between; align-items:center; gap:12px; width:100%; margin:6px 0 }
+
+/* Karten schweben beim Seitenwechsel nacheinander ein */
+.intro > * { animation:float-in .55s cubic-bezier(.2,.9,.3,1.25) calc(var(--i,0) * 70ms) backwards !important }
+@keyframes float-in { from { opacity:0; transform:translateY(26px) scale(.94) } }
+
+/* Ruhige Ansicht: alles steht still */
+[data-calm] body::before, [data-calm] body::after, [data-calm] :is(.banner,.player,header)::before { animation:none !important }
+@media (prefers-reduced-motion: reduce) { body::before, body::after, .intro > * { animation:none !important } }
+@media print { body::before, body::after { display:none !important } }
+</style>
+</head>
+<body>
+<section id="lock" hidden aria-labelledby="lockTitle">
+  <div class="sheet center">
+    <h1 id="lockTitle">Willkommen bei Life Control</h1>
+    <p>Gib das Passwort ein. Du findest es in der Datei <b>Dein-Zugang.txt</b> aus deinem Etsy-Download.</p>
+    <p class="hint" id="lockPhone" hidden style="margin-top:10px">Tipp: Lege die App zuerst auf deinen
+      Startbildschirm und melde dich <b>dort</b> an.</p>
+    <form id="lockForm" style="margin-top:18px">
+      <label for="password">Passwort</label>
+      <input id="password" type="password" required autocomplete="off" autocapitalize="characters" spellcheck="false">
+      <button type="button" class="del" id="showPassword" aria-pressed="false">Passwort zeigen</button>
+      <button class="primary">App öffnen</button>
+    </form>
+    <p class="info" id="lockStatus" role="status" style="margin-top:12px"></p>
+    <button type="button" id="demoStart" class="del">Erst ansehen: Demo mit Beispieldaten</button>
+    <p class="hint" style="margin:16px 0 0">© 2026 TinyRoom Studio · Bitte gib dein Passwort nicht weiter.</p>
+  </div>
+</section>
+
+<div class="wrap">
+  <div id="demoBar" hidden><span>Demo – nichts wird gespeichert</span><button type="button" id="demoEnd">Beenden</button></div>
+  <header>
+    <h1 id="greeting">Life Control</h1>
+    <div class="hero">
+      <p id="heroText"></p>
+      <div class="big" id="heroNumbers">
+        <div><span>Schon gespart</span><strong id="hHave"></strong></div>
+        <div><span>Fehlt bis zum Ziel</span><strong id="hMissing"></strong></div>
+      </div>
+      <div class="bar" id="heroBar" role="progressbar" aria-label="Fortschritt zum Ziel"
+           aria-valuemin="0" aria-valuemax="100"><i></i></div>
+      <p id="heroPercent"></p>
+    </div>
+  </header>
+
+  <nav aria-label="Menü">
+    <button data-view="today">Heute</button>
+    <button data-view="plan">Kalender</button>
+    <button data-view="way">Weg</button>
+    <button data-view="sport">Sport</button>
+    <button data-view="home">Geld</button>
+    <button data-view="settings">Mehr</button>
+  </nav>
+  <div class="subnav" id="subnav" role="group" aria-label="Geld">
+    <button type="button" data-sub="home">Übersicht</button>
+    <button type="button" data-sub="stats">Statistik</button>
+    <button type="button" data-sub="worth">Zeit wert?</button>
+  </div>
+  <main class="view alltag" id="today" hidden></main>
+  <main class="view alltag" id="plan" hidden></main>
+  <main class="view alltag" id="way" hidden></main>
+  <main class="view alltag" id="sport" hidden></main>
+
+  <!-- Start -->
+  <main class="view" id="home">
+    <section class="card next" id="nextCard" aria-live="polite">
+      <small>Dein nächster Schritt</small>
+      <h2 id="nextTitle"></h2>
+      <button class="primary" id="nextButton"></button>
+      <div class="level"><span id="levelText"></span><div class="bar"><i id="levelBar"></i></div></div>
+    </section>
+    <section class="stats" data-block="overview" aria-live="polite">
+      <div class="stat"><span>Einnahmen pro Monat</span><strong id="sIncome"></strong></div>
+      <div class="stat"><span>Fixkosten pro Monat</span><strong id="sCosts"></strong></div>
+      <div class="stat"><span>Nötige Sparraten</span><strong id="sRates"></strong></div>
+      <div class="stat" id="freeBox"><span>Frei verfügbar</span><strong id="sFree"></strong></div>
+    </section>
+    <section class="card" data-block="month">
+      <h2>Monat eintragen</h2>
+      <p class="hint">Einmal im Monat: Was hast du ausgegeben, was gespart?</p>
+      <form id="monthForm">
+        <div class="grid">
+          <label>Monat<input type="month" id="mMonth" required></label>
+          <label>Ausgegeben<input id="mSpent" inputmode="decimal" placeholder="0 €" required></label>
+          <label>Gespart<input id="mSaved" inputmode="decimal" placeholder="0 €" required></label>
+          <label>Gespartes zählt für<select id="mGoal"></select></label>
+        </div>
+        <div class="actions" style="margin-top:12px"><button class="primary">Monat speichern</button>
+          <span class="info" id="monthStatus" role="status"></span></div>
+      </form>
+    </section>
+    <section class="card" data-block="goals"><h2>Meine Sparziele</h2><div id="homeGoals"></div></section>
+    <section class="card" data-block="tips"><h2>Spartipps für dich</h2><div id="tips"></div></section>
+    <div class="card actions" id="startCard"><button id="focusOff" hidden>Alles anzeigen</button></div>
+  </main>
+
+  <!-- Statistik -->
+  <main class="view" id="stats" hidden>
+    <section class="card">
+      <h2>Ausgaben und Erspartes</h2>
+      <p class="hint" id="statSummary"></p>
+      <div class="legend"><span><i style="background:var(--spent)"></i>Ausgegeben</span>
+        <span><i style="background:var(--saved)"></i>Gespart</span></div>
+      <div class="chart" id="chart"></div>
+    </section>
+    <section class="card"><h2>Alle Monate</h2><div class="scroll" id="monthTable"></div></section>
+  </main>
+
+  <!-- Zeit-Check -->
+  <main class="view" id="worth" hidden>
+    <section class="card">
+      <h2>Stundenlohn-Umrechner</h2>
+      <p class="hint">Was verdienst du wirklich pro Stunde? Damit rechnet der Zeit-Check.</p>
+      <div class="grid">
+        <label>Das bekomme ich pro Monat<input id="pay" inputmode="decimal" placeholder="z. B. 1.800 €"></label>
+        <label>Arbeitsstunden pro Tag<input id="dayHours" inputmode="decimal" placeholder="z. B. 8"></label>
+        <label>Arbeitstage pro Woche<input id="weekDays" inputmode="decimal" placeholder="z. B. 5"></label>
+      </div>
+      <p class="time center" id="wageResult" aria-live="polite"></p>
+      <p class="hint center" id="wageInfo" style="margin:0"></p>
+    </section>
+    <section class="card">
+      <h2>Ist das Produkt die Zeit wert?</h2>
+      <p class="hint">Sieh, wie lange du dafür arbeiten musst. Entscheiden tust du selbst.</p>
+      <form id="itemForm">
+        <div class="grid">
+          <label>Was möchtest du kaufen?<input id="iName" required maxlength="80" placeholder="z. B. Kopfhörer"></label>
+          <label>Preis<input id="iPrice" required inputmode="decimal" placeholder="0 €"></label>
+        </div>
+        <div class="actions" style="margin-top:12px"><button class="primary">Zeit berechnen</button>
+          <span class="info" id="itemStatus" role="status"></span></div>
+      </form>
+      <label style="margin-top:14px">Wenn ich unsicher bin, warte ich …
+        <select id="waitMode"></select></label>
+    </section>
+    <p class="card info" id="savedTime" hidden></p>
+    <div id="itemList"></div>
+  </main>
+
+  <!-- Einstellungen -->
+  <main class="view" id="settings" hidden>
+    <section class="card" id="installCard" hidden>
+      <h2>Als App installieren</h2>
+      <p class="hint" id="installHint"></p>
+      <button id="install" class="primary" hidden>App installieren</button>
+    </section>
+    <section class="card">
+      <h2>Aussehen</h2>
+      <p class="hint">Wähle deine Farbe und deinen Stil. Alles passt sich sofort an.</p>
+      <h3 style="margin-bottom:8px">Farbe</h3>
+      <div class="swatches" id="swatches" role="group" aria-label="Farbe"></div>
+      <h3 style="margin-bottom:8px">Stil</h3>
+      <div class="styles" id="styleChoices" role="group" aria-label="Stil"></div>
+    </section>
+    <section class="card">
+      <h2>Fokus und Ruhe</h2>
+      <label class="switch"><input type="checkbox" id="focus">
+        <span>Fokus-Modus<small>Auf der Startseite nur dein Ziel und der nächste Schritt.</small></span></label>
+      <label class="switch"><input type="checkbox" id="calm">
+        <span>Ruhige Ansicht<small>Keine Animationen und kein Konfetti.</small></span></label>
+    </section>
+    <section class="card">
+      <h2>Startseite anordnen</h2>
+      <p class="hint">Was dir am wichtigsten ist, kommt nach oben.</p>
+      <ol class="order" id="orderList"></ol>
+    </section>
+    <section class="card">
+      <h2>Erinnerungen</h2>
+      <p class="hint">Wenn eine Wartezeit endet, fragt dich die App, ob du noch kaufen möchtest.</p>
+      <p class="info" id="notifyState" role="status"></p>
+      <div class="actions" style="margin-top:10px">
+        <button id="notifyOn" hidden>Benachrichtigungen erlauben</button>
+        <button id="notifyTest" hidden>Probe-Benachrichtigung</button>
+      </div>
+      <p class="hint" style="margin:12px 0 0">Ist die App ganz geschlossen, kann sie sich nicht selbst melden.
+        Trag dafür beim Produkt die <b>Kalender-Erinnerung</b> ein – dann erinnert dich dein Kalender.</p>
+    </section>
+    <section class="card"><h2>Über mich</h2>
+      <label>Vorname<input id="name" maxlength="40"></label>
+      <label style="margin-top:10px">Das mache ich gerade<select id="occupation"></select></label>
+      <label style="margin-top:10px">So wohne ich<select id="home-type"></select></label>
+      <label style="margin-top:10px">Mein Ziel<textarea id="mainGoal"></textarea></label></section>
+    <section class="card"><h2>Sparziele</h2>
+      <p class="hint">Mit Zielmonat berechne ich die Monatsrate.</p>
+      <div id="goals"></div><button data-add="goals">+ Sparziel</button></section>
+    <section class="card"><h2>Monatliche Einnahmen</h2><div id="income"></div>
+      <button data-add="income">+ Einnahme</button><p class="total" id="tIncome"></p></section>
+    <section class="card"><h2>Fixkosten pro Monat</h2>
+      <p class="hint" id="costHint"></p><div id="costs"></div>
+      <div class="actions"><button data-add="costs">+ Fixkosten</button>
+      <button type="button" id="suggestCosts">Passende Posten vorschlagen</button></div><p class="total" id="tCosts"></p></section>
+    <section class="card"><h2>Was ich habe</h2><div id="assets"></div>
+      <button data-add="assets">+ Eintrag</button><p class="total" id="tAssets"></p></section>
+    <section class="card"><h2>Was ich vorhabe</h2><div id="plans"></div>
+      <button data-add="plans">+ Vorhaben</button><p class="total" id="tPlans"></p></section>
+    <section class="card"><h2>Lizenz und Copyright</h2>
+      <p class="info"><b>© 2026 TinyRoom Studio. Alle Rechte vorbehalten.</b></p>
+      <p class="info">Mit dem Kauf darfst du die App für dich persönlich auf deinen eigenen Geräten nutzen.
+        Nicht erlaubt ist, sie oder ihren Link zu kopieren, weiterzugeben, zu veröffentlichen oder
+        weiterzuverkaufen.</p></section>
+    <section class="card save"><h2>Speichern</h2>
+      <p class="hint" id="saveState" role="status"></p>
+      <p class="info" id="backupInfo" style="margin-bottom:10px"></p>
+      <div class="actions">
+        <button id="link" hidden>In Datei speichern</button>
+        <button id="export">Sicherung speichern</button>
+        <button id="import">Sicherung laden</button>
+        <button id="print">Drucken / PDF</button>
+        <button id="reset" class="del">Alles löschen</button>
+        <input type="file" id="file" accept=".json,application/json" hidden>
+      </div>
+      <p class="hint" id="status" role="status" style="margin:10px 0 0"></p>
+    </section>
+  </main>
+  <footer>© 2026 TinyRoom Studio · Alle Rechte vorbehalten</footer>
+</div>
+
+<dialog id="installGuide" aria-labelledby="guideTitle">
+  <div class="sheet center">
+    <img id="guideIcon" alt="" width="84" height="84" class="appicon">
+    <h2 id="guideTitle">Hol dir die App auf den Startbildschirm</h2>
+    <ol class="steps" id="guideSteps"></ol>
+    <div class="answers">
+      <button class="primary" id="guideInstall" hidden>Jetzt installieren</button>
+      <button class="del" id="guideSkip">Im Browser weitermachen</button>
+    </div>
+  </div>
+</dialog>
+
+<div id="toast" role="status"></div>
+
+<dialog id="quiz" aria-labelledby="quizTitle">
+  <form class="sheet" id="quizForm" novalidate>
+    <div class="progress"><i id="quizBar"></i></div>
+    <div id="quizStep"></div>
+    <div class="between">
+      <button type="button" id="quizBack">Zurück</button>
+      <button type="button" id="quizClose" class="del">Später</button>
+      <button type="submit" id="quizNext" class="primary">Weiter</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="ask" aria-labelledby="askTitle">
+  <div class="sheet center" id="askBody"></div>
+</dialog>
+
+<dialog id="party" aria-labelledby="partyTitle">
+  <div class="sheet center">
+    <svg class="check" viewBox="0 0 72 72" aria-hidden="true"><circle cx="36" cy="36" r="31"/>
+      <path d="M22 37l10 10 19-21"/></svg>
+    <h2 id="partyTitle"></h2>
+    <p id="partyText"></p>
+    <div class="actions" style="justify-content:center;margin-top:16px">
+      <button class="primary" id="partyClose">Weiter so</button></div>
+  </div>
+</dialog>
+
+<script src="alltag.js"></script>
+<script>
+"use strict";
+const KEY = "haushaltsplan-v1";
+const LISTS = ["income", "costs", "assets", "goals", "plans", "months", "items"];
+const FIELDS = {
+  income: ["name", "amount"], costs: ["name", "amount"], assets: ["name", "amount"],
+  goals: ["id", "name", "target", "saved", "month"], plans: ["name", "amount"],
+  months: ["month", "spent", "saved", "goal"], items: ["id", "name", "price", "hours", "status", "until", "notified"]
+};
+const $ = id => document.getElementById(id);
+const euro = n => new Intl.NumberFormat("de-DE", { style: "currency", currency: "EUR" }).format(n);
+const calm = matchMedia("(prefers-reduced-motion: reduce)");
+const still = () => calm.matches || state.calm;
+const newId = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+
+// "1.200,50", "1200.50" und "1.200" richtig lesen.
+function num(text) {
+  let t = String(text || "").replace(/[^\d.,-]/g, "");
+  if (t.includes(",")) t = t.replace(/\./g, "").replace(",", ".");
+  else if (/^-?\d{1,3}(\.\d{3})+$/.test(t)) t = t.replace(/\./g, "");
+  const n = parseFloat(t);
+  return Number.isFinite(n) && n > 0 ? n : 0;
+}
+const asText = n => String(Math.round(n * 100) / 100).replace(".", ",");
+
+// ---------- Aussehen ----------
+const DEFAULT_COLOR = "#7b5fd9";
+const COLORS = [[DEFAULT_COLOR, "Flieder"], ["#4f7d6d", "Salbei"], ["#00b8d9", "Neon-Cyan"], ["#0f6b5c", "Petrol"], ["#1d5fd1", "Blau"], ["#6d3fd4", "Violett"], ["#c2276f", "Pink"],
+  ["#c62f2f", "Rot"], ["#c25a0a", "Orange"], ["#2f7d32", "Grün"], ["#2f3a4a", "Anthrazit"]];
+const STYLES = { spiel: "Pastell-Spiel", ruhig: "Ruhig", futur: "Cyber", klassisch: "Hologramm", verspielt: "Neon Pop", minimal: "Clean Tech",
+  elegant: "Platin", dunkel: "Stealth" };
+const channels = hex => [1, 3, 5].map(i => parseInt(hex.slice(i, i + 2), 16));
+const mix = (a, b, share) => "#" + channels(a).map((v, i) =>
+  Math.round(v + (channels(b)[i] - v) * share).toString(16).padStart(2, "0")).join("");
+function brightness(hex) {
+  const [r, g, b] = channels(hex).map(v => { v /= 255; return v <= .03928 ? v / 12.92 : ((v + .055) / 1.055) ** 2.4; });
+  return .2126 * r + .7152 * g + .0722 * b;
+}
+const contrast = (a, b) => {
+  const [high, low] = [brightness(a), brightness(b)].sort((x, y) => y - x);
+  return (high + .05) / (low + .05);
+};
+// Dunkelt oder hellt die Wunschfarbe so lange ab, bis Schrift gut lesbar ist.
+function readable(color, against, toward) {
+  let result = color;
+  for (let i = 1; i <= 20 && contrast(result, against) < 4.5; i++) result = mix(color, toward, i / 20);
+  return result;
+}
+function applyLook() {
+  const root = document.documentElement, dark = ["dunkel", "futur"].includes(state.style);
+  root.dataset.style = state.style;
+  const card = state.style === "futur" ? "#121a30" : dark ? "#121216" : "#ffffff";
+  const soft = mix(card, state.color, dark ? .22 : .1);
+  // Gegen die hellere der beiden Flächen (dunkel) bzw. die dunklere (hell) prüfen.
+  const surface = dark && brightness(card) > brightness(soft) ? card : soft;
+  const accent = readable(state.color, surface, dark ? "#ffffff" : "#000000");
+  const head2 = readable(state.color, "#ffffff", "#000000");
+  const head1 = mix(head2, "#0b1830", .6);
+  const values = { "--accent": accent, "--soft": soft, "--head1": head1, "--head2": head2,
+    "--accent2": head1, "--on-accent": contrast(accent, "#ffffff") >= 4.5 ? "#ffffff" : "#101418" };
+  for (const [key, value] of Object.entries(values)) root.style.setProperty(key, value);
+  document.querySelector("meta[name=theme-color]").content = state.style === "spiel" ? "#e9e1ff" : head1;
+}
+function renderLook() {
+  const choose = (key, value) => { state[key] = value; save(); applyLook(); renderLook(); };
+  const swatches = COLORS.map(([color, name]) => {
+    const b = el("button", { type: "button", title: name, ariaLabel: name });
+    b.style.background = color;
+    b.setAttribute("aria-pressed", state.color === color);
+    b.addEventListener("click", () => choose("color", color));
+    return b;
+  });
+  const own = el("input", { type: "color", value: state.color });
+  // Während des Auswählens nur anwenden, damit der Farbdialog offen bleibt.
+  own.addEventListener("input", () => { state.color = own.value; save(); applyLook(); });
+  own.addEventListener("change", renderLook);
+  $("swatches").replaceChildren(...swatches, field("Eigene Farbe", own));
+  $("styleChoices").replaceChildren(...Object.entries(STYLES).map(([key, name]) => {
+    const b = el("button", { type: "button" }, el("span", { className: "mini " + key }, el("i"), el("b")), name);
+    b.setAttribute("aria-pressed", state.style === key);
+    b.addEventListener("click", () => { choose("style", key); toast(`Stil „${name}“ aktiv`); });
+    return b;
+  }));
+}
+
+// ---------- Reihenfolge der Startseite ----------
+const BLOCKS = { overview: "Geldübersicht", month: "Monat eintragen", goals: "Meine Sparziele",
+  tips: "Spartipps" };
+// Nur bekannte Bereiche, jeder genau einmal; Fehlende kommen ans Ende.
+const cleanOrder = list => [...new Set([...(Array.isArray(list) ? list : [])
+  .filter(key => Object.hasOwn(BLOCKS, key)), ...Object.keys(BLOCKS)])];
+function applyOrder() {
+  for (const key of state.order) $("home").insertBefore(
+    $("home").querySelector(`[data-block=${key}]`), $("startCard"));
+}
+function renderOrder(moved) {
+  $("orderList").replaceChildren(...state.order.map((key, i) => {
+    const arrow = (symbol, step, label) => {
+      const b = el("button", { type: "button", textContent: symbol, ariaLabel: `${BLOCKS[key]} ${label}`,
+        disabled: i + step < 0 || i + step >= state.order.length });
+      b.addEventListener("click", () => {
+        [state.order[i], state.order[i + step]] = [state.order[i + step], state.order[i]];
+        save(); applyOrder(); renderOrder(key); toast("Reihenfolge gespeichert");
+      });
+      return b;
+    };
+    return el("li", { className: key === moved ? "enter" : "" }, el("span", { textContent: BLOCKS[key] }),
+      arrow("▲", -1, "nach oben"), arrow("▼", 1, "nach unten"));
+  }));
+}
+
+// ---------- Lebenssituation ----------
+// job: Frage nach Arbeitszeiten (true = ja, "optional" = nur falls Nebenjob, false = nein)
+const OCCUPATIONS = {
+  pupil: { label: "Ich gehe zur Schule", income: "Taschengeld, Nebenjob, Geschenke", job: "optional",
+    extra: [["school", "Schulsachen und Ausflüge"]], goals: ["Handy", "Führerschein", "Urlaub", "Spielkonsole", "Kleidung"] },
+  apprentice: { label: "Ich mache eine Ausbildung / Lehre", income: "Lehrlingsgehalt, Trinkgeld, Beihilfen", job: true,
+    extra: [["school", "Berufsschule und Material"]], goals: ["Führerschein", "Notgroschen", "Auto", "Urlaub", "Eigene Wohnung"] },
+  student: { label: "Ich studiere", income: "Nebenjob, Unterstützung, Stipendium", job: "optional",
+    extra: [["school", "Studiengebühren und Material (pro Monat)"]], goals: ["Notgroschen", "Laptop", "Urlaub", "Auslandssemester", "Führerschein"] },
+  employee: { label: "Ich arbeite", income: "Gehalt, Lohn, Nebenjob", job: true,
+    extra: [], goals: ["Notgroschen", "Urlaub", "Auto", "Wohnung", "Weiterbildung"] },
+  selfemployed: { label: "Ich bin selbstständig", income: "Durchschnitt, was dir privat bleibt", job: true,
+    extra: [["tax", "Rücklage für Steuern und Abgaben"]], goals: ["Notgroschen", "Steuerrücklage", "Ausrüstung", "Urlaub", "Auto"] },
+  seeking: { label: "Ich suche gerade Arbeit", income: "Unterstützung, Arbeitslosengeld, Minijob", job: false,
+    extra: [["apply", "Bewerbungen und Fahrten"]], goals: ["Notgroschen", "Weiterbildung", "Führerschein"] },
+  retired: { label: "Ich bin in Rente / Pension", income: "Rente, Pension, Zusatzeinkommen", job: false,
+    extra: [["health", "Gesundheit und Medikamente"]], goals: ["Notgroschen", "Reise", "Enkel", "Reparaturen"] },
+  other: { label: "Etwas anderes", income: "Alles, was regelmäßig reinkommt", job: "optional",
+    extra: [], goals: ["Notgroschen", "Urlaub", "Auto", "Wohnung", "Weiterbildung"] },
+};
+const HOMES = {
+  family: { label: "Bei Eltern / Familie", costs: [["contribution", "Beitrag zu Hause (falls du etwas gibst)"],
+    ["phone", "Handy"], ["transport", "Bus, Bahn, Fahrzeug"], ["other", "Abos, Hobbys, Sonstiges"]] },
+  shared: { label: "In einer WG", costs: [["rent", "Mein Anteil an der Miete"], ["energy", "Mein Anteil an Strom, Wasser, Heizung"],
+    ["phone", "Handy und Internet"], ["transport", "Bus, Bahn, Fahrzeug"], ["other", "Abos, Versicherungen, Sonstiges"]] },
+  dorm: { label: "Im Wohnheim", costs: [["rent", "Wohnheimgebühr"], ["phone", "Handy und Internet"],
+    ["transport", "Bus, Bahn, Fahrzeug"], ["other", "Abos, Versicherungen, Sonstiges"]] },
+  rent: { label: "In einer Mietwohnung / einem Miethaus", costs: [["rent", "Miete"], ["energy", "Strom und Heizung"],
+    ["water", "Wasser, Müll, Nebenkosten"], ["phone", "Handy und Internet"], ["transport", "Bus, Bahn, Fahrzeug"],
+    ["insurance", "Versicherungen"], ["other", "Abos und Sonstiges"]] },
+  own: { label: "Im eigenen Haus / in der eigenen Wohnung", costs: [["loan", "Kreditrate (falls vorhanden)"],
+    ["energy", "Strom und Heizung"], ["water", "Wasser, Abwasser, Müll"], ["fees", "Abgaben, Hausgeld, Grundsteuer"],
+    ["insurance", "Gebäude- und andere Versicherungen"], ["repairs", "Rücklage für Reparaturen"],
+    ["phone", "Handy und Internet"], ["transport", "Bus, Bahn, Fahrzeug"], ["other", "Abos und Sonstiges"]] },
+};
+const GENERAL_COSTS = [["rent", "Wohnen (falls du dafür zahlst)"], ["phone", "Handy und Internet"],
+  ["transport", "Bus, Bahn, Fahrzeug"], ["other", "Abos, Versicherungen, Sonstiges"]];
+const costFields = (occupation, home) => [...(HOMES[home]?.costs || GENERAL_COSTS), ...(OCCUPATIONS[occupation]?.extra || [])];
+
+// Übernimmt nur bekannte Felder – auch aus geladenen Dateien.
+function clean(data) {
+  const result = { mainGoal: String(data?.mainGoal || ""),
+    name: String(data?.name || "").slice(0, 40), savedAt: Number(data?.savedAt) || 0,
+    pay: String(data?.pay || ""), dayHours: String(data?.dayHours || ""),
+    weekDays: String(data?.weekDays || ""),
+    look: 2, color: data?.look === 2 && /^#[0-9a-f]{6}$/i.test(data?.color) ? data.color.toLowerCase() : DEFAULT_COLOR,
+    style: data?.look === 2 && Object.hasOwn(STYLES, data?.style) ? data.style : "spiel",
+    focus: data?.focus === true, calm: data?.calm === true,
+    order: cleanOrder(data?.order),
+    waitMode: ["hours", "workdays", "day", "three", "week"].includes(data?.waitMode) ? data.waitMode : "hours",
+    occupation: Object.hasOwn(OCCUPATIONS, data?.occupation) ? data.occupation : "",
+    home: Object.hasOwn(HOMES, data?.home) ? data.home : "",
+    since: Number(data?.since) || 0, backupAt: Number(data?.backupAt) || 0 };
+  const array = value => (Array.isArray(value) ? value : []).slice(0, 500);
+  for (const list of LISTS) {
+    result[list] = array(data?.[list]).map(item => {
+      const row = {};
+      for (const f of FIELDS[list]) row[f] = String(item?.[f] ?? "");
+      if (list === "plans") row.done = item?.done === true;
+      if ((list === "goals" || list === "items") && !row.id) row.id = newId();
+      return row;
+    });
+  }
+  result.months = result.months.filter(m => /^\d{4}-(0[1-9]|1[0-2])$/.test(m.month));
+  return result;
+}
+
+let state;
+try { state = clean(JSON.parse(localStorage.getItem(KEY))); }
+catch { state = clean(null); }
+
+// ---------- Zugang mit Passwort ----------
+// Hier steht nur ein Prüfwert, nicht das Passwort. Der erste gilt für neue Anmeldungen,
+// ältere halten bereits angemeldete Geräte offen. Erzeugt von bauen.py.
+const HASHES = ["8ffcff15f34a5152798e389174eb569a7ecbd7b474438e5bc660c8db6e5ade7f"];
+const locked = () => document.documentElement.hasAttribute("data-locked");
+// Groß- und Kleinschreibung, Leerzeichen und Bindestriche spielen keine Rolle.
+const normal = text => String(text).toUpperCase().replace(/[\s‐-―-]/g, "");
+async function fingerprint(password) {
+  const encode = text => new TextEncoder().encode(text);
+  const key = await crypto.subtle.importKey("raw", encode(normal(password)), "PBKDF2", false, ["deriveBits"]);
+  const bits = await crypto.subtle.deriveBits({ name: "PBKDF2", hash: "SHA-256", salt: encode("lifecontrol:v1"),
+    iterations: 200000 }, key, 256);
+  return [...new Uint8Array(bits)].map(v => v.toString(16).padStart(2, "0")).join("");
+}
+// Öffnet, wenn dieses Gerät schon angemeldet ist, sonst erscheint die Anmeldung.
+async function requireLicence(unlocked) {
+  let stored = "";
+  try { stored = localStorage.getItem("lifecontrol-zugang") || ""; } catch { /* ohne Speicher */ }
+  const open = () => {
+    document.documentElement.removeAttribute("data-locked"); $("lock").hidden = true;
+    drawAll(); unlocked();
+  };
+  if (HASHES.includes(stored)) return open();
+  $("lockPhone").hidden = !(/iphone|ipad|ipod|android/i.test(navigator.userAgent)
+    && location.protocol.startsWith("http") && !matchMedia("(display-mode: standalone)").matches
+    && navigator.standalone !== true);
+  $("lock").hidden = false;
+  $("showPassword").onclick = () => {
+    const show = $("password").type === "password";
+    $("password").type = show ? "text" : "password";
+    $("showPassword").textContent = show ? "Passwort verbergen" : "Passwort zeigen";
+    $("showPassword").setAttribute("aria-pressed", show);
+  };
+  $("lockForm").onsubmit = async event => {
+    event.preventDefault();
+    $("lockStatus").textContent = "Wird geprüft …";
+    let value = "";
+    try { value = await fingerprint($("password").value); }
+    catch { $("lockStatus").textContent = "Dieser Browser kann das Passwort nicht prüfen. Nimm bitte Chrome, Edge oder Safari."; return; }
+    if (value !== HASHES[0]) {
+      $("lockStatus").textContent = "Das Passwort passt nicht. Schau noch einmal in Dein-Zugang.txt.";
+      return;
+    }
+    try { localStorage.setItem("lifecontrol-zugang", value); navigator.storage?.persist?.(); }
+    catch { /* gilt dann nur bis zum Schließen */ }
+    $("password").value = ""; $("lockStatus").textContent = "";
+    open();
+  };
+}
+
+// ---------- Speichern: immer im Browser, auf Wunsch zusätzlich in einer Datei ----------
+let fileHandle = null, fileActive = false, timer = null, writing = Promise.resolve(), unsaved = false;
+let browserOk = true;
+
+function showSaveState(problem) {
+  const where = [browserOk ? "in diesem Browser" : "", fileActive ? `in „${fileHandle.name}“` : ""]
+    .filter(Boolean).join(" und ");
+  $("saveState").textContent = problem || (where ? `Automatisch gespeichert ${where}.`
+    : "Speichern im Browser nicht möglich – bitte eine Speicherdatei wählen.");
+  $("link").textContent = fileHandle && !fileActive ? `Speichern in „${fileHandle.name}“ fortsetzen`
+    : fileActive ? "Andere Datei wählen" : "Zusätzlich in Datei speichern";
+}
+function writeFile() {
+  if (demo) return;
+  clearTimeout(timer); timer = null;
+  const handle = fileHandle, text = JSON.stringify({ ...state, alltag: alltag.dump() }, null, 2);
+  writing = writing.then(async () => {
+    const out = await handle.createWritable();
+    await out.write(text); await out.close();
+    if (!timer) { unsaved = false; showSaveState(); }
+  }).catch(() => { fileActive = false;
+    showSaveState("Die Datei konnte nicht beschrieben werden. Bitte neu verbinden."); });
+}
+function save() {
+  if (demo) return;
+  if (!state.since) state.since = Date.now();
+  state.savedAt = Date.now();
+  try { localStorage.setItem(KEY, JSON.stringify(state)); browserOk = true; }
+  catch { browserOk = false; }
+  if (fileActive) { unsaved = true; clearTimeout(timer); timer = setTimeout(writeFile, 400); }
+  else showSaveState();
+}
+function remember(value) {
+  return new Promise(resolve => {
+    try {
+      const open = indexedDB.open(KEY, 1);
+      open.onupgradeneeded = () => open.result.createObjectStore("files");
+      open.onerror = () => resolve(null);
+      open.onsuccess = () => {
+        const store = open.result.transaction("files", value ? "readwrite" : "readonly").objectStore("files");
+        const request = value ? store.put(value, "plan") : store.get("plan");
+        request.onsuccess = () => resolve(value || request.result || null);
+        request.onerror = () => resolve(null);
+      };
+    } catch { resolve(null); }
+  });
+}
+async function connect(handle) {
+  let stored = null;
+  const text = await (await handle.getFile()).text();
+  if (text.trim()) {
+    stored = JSON.parse(text);
+    if (!LISTS.some(l => Array.isArray(stored?.[l]))) throw new Error("fremde Datei");
+  }
+  fileHandle = handle;
+  if (stored && Number(stored.savedAt) > state.savedAt) {   // die neuere Fassung gewinnt
+    state = clean(stored); alltag.load(stored.alltag); drawAll();
+    try { localStorage.setItem(KEY, JSON.stringify(state)); } catch { browserOk = false; }
+  }
+  fileActive = true; remember(handle); writeFile(); showSaveState();
+}
+async function setupFileSaving() {
+  showSaveState();
+  if (!window.showSaveFilePicker) return;
+  $("link").hidden = false;
+  const handle = await remember();
+  if (!handle) return;
+  fileHandle = handle; showSaveState();
+  try { if (await handle.queryPermission({ mode: "readwrite" }) === "granted") await connect(handle); }
+  catch { showSaveState(); }
+}
+
+// ---------- Bausteine ----------
+function el(tag, props = {}, ...children) {
+  const node = Object.assign(document.createElement(tag), props);
+  node.append(...children);
+  return node;
+}
+const empty = text => el("p", { className: "empty", textContent: text });
+const field = (label, node) => el("label", {}, label, node);
+
+function toast(text) {
+  const box = $("toast");
+  box.textContent = text; box.classList.add("on");
+  clearTimeout(box.timer);
+  box.timer = setTimeout(() => box.classList.remove("on"), 1800);
+}
+
+// Zahlen laufen weich zum neuen Wert.
+function countTo(node, target) {
+  cancelAnimationFrame(node.frame); clearTimeout(node.fallback);
+  const from = node.value ?? 0, begin = performance.now();
+  const finish = () => { cancelAnimationFrame(node.frame); node.value = target; node.textContent = euro(target); };
+  if (still() || document.hidden || from === target) return finish();
+  const tick = now => {
+    const p = Math.min(1, Math.max(0, (now - begin) / 600));
+    node.value = from + (target - from) * (1 - Math.pow(1 - p, 3));
+    node.textContent = euro(node.value);
+    if (p < 1) node.frame = requestAnimationFrame(tick); else finish();
+  };
+  node.frame = requestAnimationFrame(tick);
+  node.fallback = setTimeout(finish, 800);
+}
+function grow(bar, percent) { setTimeout(() => { bar.style.width = percent + "%"; }, 60); }
+
+// ---------- Berechnungen ----------
+const total = list => state[list].reduce((sum, item) => sum + num(item.amount), 0);
+function monthsLeft(value) {
+  const m = /^(\d{4})-(\d{2})$/.exec(value);
+  if (!m) return null;
+  const now = new Date();
+  return (Number(m[1]) - now.getFullYear()) * 12 + Number(m[2]) - 1 - now.getMonth() + 1;
+}
+function goalInfo(g) {
+  const target = num(g.target), saved = num(g.saved), open = Math.max(0, target - saved);
+  const percent = target ? Math.min(100, saved / target * 100) : 0;
+  const months = monthsLeft(g.month);
+  const rate = open && months >= 1 ? Math.ceil(open / months * 100) / 100 : 0;
+  let text;
+  if (!target) text = "Trag einen Zielbetrag ein.";
+  else if (!open) text = "Geschafft!";
+  else {
+    text = `${Math.floor(percent)} % erreicht, es fehlen ${euro(open)}.`;
+    if (months === null) text += " Wähle einen Zielmonat für die Monatsrate.";
+    else if (months < 1) text += " Der Zielmonat ist vorbei – bitte neu wählen.";
+    else text += ` Lege ${euro(rate)} pro Monat zurück (${months} ${months === 1 ? "Monat" : "Monate"}).`;
+  }
+  return { target, saved, open, percent, rate, text };
+}
+const monthlyRates = () => state.goals.reduce((sum, g) => sum + goalInfo(g).rate, 0);
+const freeMoney = () => total("income") - total("costs") - monthlyRates();
+const sortedMonths = () => [...state.months].sort((a, b) => a.month.localeCompare(b.month));
+const monthName = (value, short) => new Date(value + "-15T12:00").toLocaleDateString("de-DE",
+  short ? { month: "short", year: "2-digit" } : { month: "long", year: "numeric" });
+const average = values => values.length ? values.reduce((a, b) => a + b, 0) / values.length : 0;
+
+// ---------- Anzeige ----------
+function renderHero() {
+  const goals = state.goals.map(goalInfo).filter(g => g.target);
+  const target = goals.reduce((s, g) => s + g.target, 0);
+  const missing = goals.reduce((s, g) => s + g.open, 0);
+  const have = goals.reduce((s, g) => s + g.saved, 0);
+  const percent = target ? Math.min(100, (target - missing) / target * 100) : 0;
+  $("greeting").textContent = state.name ? `Hallo ${state.name}` : "Life Control";
+  $("heroText").textContent = !target ? "Lege unter „Mehr“ ein Sparziel an."
+    : goals.length === 1 ? `Dein Ziel: ${state.goals.find(g => num(g.target)).name || "Sparziel"} (${euro(target)})`
+    : `Deine ${goals.length} Ziele zusammen: ${euro(target)}`;
+  for (const id of ["heroNumbers", "heroBar", "heroPercent"]) $(id).hidden = !target;
+  countTo($("hHave"), have); countTo($("hMissing"), missing);
+  grow($("heroBar").firstElementChild, percent);
+  $("heroBar").setAttribute("aria-valuenow", Math.floor(percent));
+  $("heroPercent").textContent = missing ? `${Math.floor(percent)} % geschafft` : "Alle Ziele erreicht!";
+}
+
+function tips() {
+  const income = total("income"), costs = total("costs"), assets = total("assets");
+  const months = sortedMonths(), last = months.at(-1), list = [];
+  if (!income || !costs) list.push("Trag Einnahmen und Fixkosten ein, dann werden die Tipps genauer.");
+  if (income && freeMoney() < 0) list.push("Deine Sparraten und Fixkosten sind höher als deine Einnahmen. Verschiebe einen Zielmonat oder streiche Kosten.");
+  if (income && costs > income * .5) list.push(`Fixkosten sind ${Math.round(costs / income * 100)} % deiner Einnahmen. ${state.home === "family" ? "Prüfe Handytarif und Abos."
+    : "Prüfe Verträge: Handy, Strom, Versicherungen und Abos vergleichen."}`);
+  if (state.costs.length >= 4) list.push("Geh deine Abos einzeln durch: Was hast du im letzten Monat nicht genutzt?");
+  if (costs && assets < costs * 3) list.push(`Ein Notgroschen hilft bei Überraschungen. Ein möglicher Richtwert sind drei Monate Fixkosten (${euro(costs * 3)}).`);
+  if (months.length >= 2 && num(last.spent) > average(months.slice(0, -1).map(m => num(m.spent))))
+    list.push("Zuletzt hast du mehr ausgegeben als sonst. Schau, welche Ausgaben ungewöhnlich waren.");
+  if (last && income && num(last.saved) < income * .1) list.push("Richte am Gehaltstag einen Dauerauftrag aufs Sparkonto ein, auch wenn es nur ein kleiner Betrag ist.");
+  list.push("Prüfe Wunschkäufe unter „Zeit wert?“ und lass dir Zeit, wenn du unsicher bist.",
+    "Geh mit Einkaufszettel und festem Betrag einkaufen.");
+  return list.slice(0, 4);
+}
+
+function renderHome() {
+  renderNext();
+  countTo($("sIncome"), total("income")); countTo($("sCosts"), total("costs"));
+  countTo($("sRates"), monthlyRates()); countTo($("sFree"), freeMoney());
+  const short = freeMoney() < -0.004;
+  $("freeBox").classList.toggle("bad", short);
+  $("freeBox").firstElementChild.textContent = short ? "Es fehlt pro Monat" : "Frei verfügbar";
+  const select = $("mGoal"), chosen = select.value;
+  select.replaceChildren(el("option", { value: "", textContent: "kein bestimmtes Ziel" }),
+    ...state.goals.map(g => el("option", { value: g.id, textContent: g.name || "Sparziel" })));
+  select.value = state.goals.some(g => g.id === chosen) ? chosen : (state.goals[0]?.id || "");
+  $("homeGoals").replaceChildren(...(state.goals.length ? state.goals.map(g => {
+    const info = goalInfo(g), bar = el("i"); grow(bar, info.percent);
+    return el("div", { className: "box" }, el("h3", { textContent: g.name || "Sparziel" }),
+      el("div", { className: "bar" }, bar), el("p", { className: "info", textContent: info.text }));
+  }) : [empty("Noch kein Sparziel. Lege eines unter „Mehr“ an.")]));
+  $("tips").replaceChildren(...tips().map(t => el("div", { className: "tip", textContent: t })));
+}
+
+function dataCell(label, amount) {
+  const cell = el("td", { textContent: euro(amount) });
+  cell.dataset.label = label;
+  return cell;
+}
+function renderStats() {
+  const all = sortedMonths(), shown = all.slice(-12);
+  const max = Math.max(1, ...shown.flatMap(m => [num(m.spent), num(m.saved)]));
+  const best = (key) => all.reduce((a, b) => num(b[key]) > num(a[key]) ? b : a, all[0]);
+  const least = all.reduce((a, b) => num(b.spent) < num(a.spent) ? b : a, all[0]);
+  $("statSummary").textContent = !all.length ? "Trag auf der Startseite deinen ersten Monat ein."
+    : all.length === 1 ? "Ab dem zweiten Monat kannst du vergleichen."
+    : `Am meisten gespart: ${monthName(best("saved").month)}. Am meisten ausgegeben: `
+      + `${monthName(best("spent").month)}. Am wenigsten ausgegeben: ${monthName(least.month)}.`;
+  $("chart").replaceChildren(...shown.map((m, i) => {
+    const bars = [["spent", "Ausgegeben", "--spent"], ["saved", "Gespart", "--saved"]].map(([key, label, colour]) => {
+      const bar = el("i", { title: `${label} ${monthName(m.month)}: ${euro(num(m[key]))}` });
+      bar.style.cssText = `height:${num(m[key]) / max * 100}%;background:var(${colour});animation-delay:${i * 60}ms`;
+      return bar;
+    });
+    return el("div", { className: "col" }, el("div", { className: "pair" }, ...bars),
+      el("small", { textContent: monthName(m.month, true) }));
+  }));
+  if (!all.length) { $("monthTable").replaceChildren(empty("Noch keine Monate.")); return; }
+  const usual = average(all.map(m => num(m.saved)));
+  const rows = [...all].reverse().map(m => {
+    const note = el("td");
+    if (all.length > 1) {
+      const more = num(m.saved) > usual;
+      note.append(el("span", { className: "badge" + (more ? "" : " warn"),
+        textContent: more ? "Mehr gespart als im Schnitt" : "Nicht über dem Schnitt" }));
+    }
+    const remove = el("button", { className: "del", textContent: "✕", ariaLabel: `${monthName(m.month)} löschen` });
+    remove.addEventListener("click", () => {
+      if (!confirm(`${monthName(m.month)} löschen?`)) return;
+      credit(m.goal, -num(m.saved));
+      state.months.splice(state.months.indexOf(m), 1);
+      save(); drawAll(); renderStats();
+    });
+    return el("tr", {}, el("td", { textContent: monthName(m.month) }),
+      dataCell("Ausgegeben", num(m.spent)), dataCell("Gespart", num(m.saved)),
+      note, el("td", {}, remove));
+  });
+  $("monthTable").replaceChildren(el("table", {},
+    el("thead", {}, el("tr", {}, ...["Monat", "Ausgegeben", "Gespart", "Vergleich", ""]
+      .map(t => el("th", { textContent: t })))), el("tbody", {}, ...rows)));
+}
+
+// ---------- Monat eintragen ----------
+function credit(goalId, amount) {
+  const goal = state.goals.find(g => g.id === goalId);
+  if (goal) goal.saved = asText(Math.max(0, num(goal.saved) + amount));
+}
+function celebrate(title, text, confetti) {
+  $("partyTitle").textContent = title; $("partyText").textContent = text;
+  $("party").showModal();
+  if (!confetti || still()) return;
+  const colours = [state.color, mix(state.color, "#ffffff", .45), "#2a78d6", "#eda100", "#e87ba4"];
+  for (let i = 0; i < 70; i++) {
+    const piece = el("i", { className: "confetti" });
+    piece.style.cssText = `left:${Math.random() * 100}%;background:${colours[i % 5]};`
+      + `animation-duration:${1.6 + Math.random() * 1.6}s;animation-delay:${Math.random() * .5}s`;
+    $("party").append(piece);   // im Dialog, damit es darüber sichtbar ist
+    setTimeout(() => piece.remove(), 4000);
+  }
+}
+function judgeMonth(entry, goalDone) {
+  const saved = num(entry.saved), name = monthName(entry.month);
+  const others = state.months.filter(m => m.month < entry.month).map(m => num(m.saved));
+  if (goalDone) return celebrate("Ziel erreicht!", `Du hast dein Sparziel „${goalDone}“ geschafft. Großartig!`, true);
+  if (!others.length) return celebrate(saved ? "Guter Start!" : "Eingetragen",
+    saved ? `Du hast im ${name} ${euro(saved)} gespart.` : "Ab dem nächsten Monat kannst du vergleichen.", saved > 0);
+  const usual = average(others);
+  if (saved > usual) return celebrate("Glückwunsch!",
+    `Im ${name} hast du ${euro(saved - usual)} mehr gespart als sonst. Mach weiter so!`, true);
+  toast("Monat gespeichert");
+  $("monthStatus").textContent = saved === usual ? "Du bist auf deinem üblichen Niveau."
+    : `${euro(usual - saved)} weniger als sonst. Nächsten Monat klappt es wieder – schau dir die Tipps an.`;
+}
+$("monthForm").addEventListener("submit", event => {
+  event.preventDefault();
+  const entry = { month: $("mMonth").value, spent: $("mSpent").value, saved: $("mSaved").value, goal: $("mGoal").value };
+  if (!/^\d{4}-\d{2}$/.test(entry.month)) { $("monthStatus").textContent = "Bitte einen Monat wählen."; return; }
+  const index = state.months.findIndex(m => m.month === entry.month);
+  if (index >= 0 && !confirm(`${monthName(entry.month)} ist schon eingetragen. Überschreiben?`)) return;
+  const goal = state.goals.find(g => g.id === entry.goal);
+  const wasOpen = goal && goalInfo(goal).open > 0;
+  if (index >= 0) { credit(state.months[index].goal, -num(state.months[index].saved)); state.months.splice(index, 1); }
+  credit(entry.goal, num(entry.saved));
+  state.months.push(entry);
+  save(); drawAll();
+  $("mSpent").value = $("mSaved").value = $("monthStatus").textContent = "";
+  const reached = wasOpen && goalInfo(goal).target && !goalInfo(goal).open;
+  judgeMonth(entry, reached ? goal.name || "Sparziel" : "");
+});
+$("partyClose").addEventListener("click", () => $("party").close());
+
+// ---------- Ist das Produkt die Zeit wert? ----------
+// Cartoon-Figuren: Der erste passende Begriff im Produktnamen entscheidet.
+const TOYS = [
+  [/kopfhörer|headphone|airpod|earbud/i, '<path d="M28 70V55a32 32 0 0 1 64 0v15" fill="none" stroke="#14304a" stroke-width="9" stroke-linecap="round"/><rect x="16" y="60" width="34" height="42" rx="15" fill="#1fa58a"/><rect x="70" y="60" width="34" height="42" rx="15" fill="#1fa58a"/>', 60, 44],
+  [/handy|phone|smartphone|tablet|ipad/i, '<rect x="33" y="12" width="54" height="94" rx="12" fill="#14304a"/><rect x="39" y="22" width="42" height="70" rx="4" fill="#9fe3d3"/><circle cx="60" cy="99" r="3" fill="#fff"/>', 60, 50],
+  [/laptop|computer|\bpc\b|macbook|notebook|monitor|fernseher|\btv\b/i, '<rect x="18" y="22" width="84" height="62" rx="8" fill="#14304a"/><rect x="25" y="29" width="70" height="48" rx="3" fill="#a9d4ff"/><path d="M8 90h104l-6 12H14z" fill="#8895a7"/>', 60, 47],
+  [/konsole|playstation|nintendo|xbox|controller|\bspiel|game/i, '<path d="M34 38h52c20 0 30 52 17 60-10 6-17-14-27-14H44c-10 0-17 20-27 14C4 90 14 38 34 38z" fill="#6c4fd1"/><path d="M30 58h16M38 50v16" stroke="#fff" stroke-width="5" stroke-linecap="round"/><circle cx="84" cy="54" r="5" fill="#ffd23f"/><circle cx="92" cy="66" r="5" fill="#ff6b6b"/>', 60, 66],
+  [/schuh|sneaker|stiefel|sandale/i, '<path d="M14 52c14 8 26 6 34-10l18 20c10 10 40 8 42 26v8H14z" fill="#ff7a45"/><path d="M14 96h94v8H14z" fill="#fff" stroke="#14304a" stroke-width="3"/><path d="M52 52l10-7M60 60l10-7" stroke="#fff" stroke-width="4" stroke-linecap="round"/>', 48, 68],
+  [/shirt|jacke|hose|kleid|pulli|pullover|hoodie|mantel|klamotte|kleidung/i, '<path d="M40 22l-30 18 11 24 13-6v46h52V58l13 6 11-24-30-18c-4 14-36 14-40 0z" fill="#2a78d6"/>', 60, 58],
+  [/fahrrad|\brad\b|bike|roller|scooter/i, '<circle cx="30" cy="84" r="22" fill="none" stroke="#14304a" stroke-width="7"/><circle cx="92" cy="84" r="22" fill="none" stroke="#14304a" stroke-width="7"/><path d="M30 84l20-38h30l12 38M50 46l14 38H30M44 36h14M80 46l-4-16h14" fill="none" stroke="#e8590c" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>', 62, 22],
+  [/auto\b|wagen|\bpkw\b|führerschein/i, '<path d="M14 62l14-28h60l18 28c8 2 10 8 10 14v18H6V74c0-7 3-10 8-12z" fill="#e0453a"/><path d="M34 42h22v18H26zM64 42h19l12 18H64z" fill="#cfeaff"/><circle cx="30" cy="96" r="12" fill="#14304a"/><circle cx="92" cy="96" r="12" fill="#14304a"/>', 60, 72],
+  [/uhr|watch/i, '<rect x="44" y="6" width="32" height="108" rx="10" fill="#14304a"/><circle cx="60" cy="60" r="36" fill="#ffd23f" stroke="#14304a" stroke-width="6"/><path d="M60 78v10M60 32v-2" stroke="#14304a" stroke-width="4" stroke-linecap="round"/>', 60, 54],
+  [/kamera|camera|foto|objektiv|drohne/i, '<path d="M40 30l8-12h26l8 12h18a10 10 0 0 1 10 10v54a10 10 0 0 1-10 10H20a10 10 0 0 1-10-10V40a10 10 0 0 1 10-10z" fill="#3f4a5c"/><circle cx="60" cy="68" r="28" fill="#a9d4ff" stroke="#fff" stroke-width="6"/>', 60, 63],
+  [/urlaub|reise|flug|hotel|koffer/i, '<path d="M44 32v-14h32v14" fill="none" stroke="#14304a" stroke-width="7" stroke-linejoin="round"/><rect x="18" y="30" width="84" height="76" rx="14" fill="#16a3b8"/><path d="M36 32v72M84 32v72" stroke="#fff" stroke-width="4" opacity=".6"/>', 60, 60],
+  [/buch|bücher|roman|book|kurs/i, '<path d="M22 18h70a8 8 0 0 1 8 8v80H30a10 10 0 0 1-10-10V20z" fill="#b0446b"/><path d="M30 88h70v18H30a9 9 0 0 1 0-18z" fill="#fff4e0"/>', 60, 48],
+  [/kaffee|coffee|mixer|küche|toaster|maschine|airfryer|topf/i, '<path d="M24 36h62v44a28 28 0 0 1-28 28h-6a28 28 0 0 1-28-28z" fill="#c8753a"/><path d="M86 46h8a15 15 0 0 1 0 32h-10" fill="none" stroke="#c8753a" stroke-width="9"/><path d="M40 26c-8-8 8-12 0-20M62 26c-8-8 8-12 0-20" fill="none" stroke="#8895a7" stroke-width="5" stroke-linecap="round"/>', 55, 62],
+  [/sofa|couch|stuhl|sessel|bett|möbel|tisch|regal|schrank|lampe/i, '<path d="M24 62V40a12 12 0 0 1 12-12h48a12 12 0 0 1 12 12v22" fill="#4c9a6a"/><rect x="8" y="56" width="104" height="42" rx="16" fill="#5fb381"/><path d="M24 98v12M96 98v12" stroke="#14304a" stroke-width="7" stroke-linecap="round"/>', 60, 66],
+  [/tasche|rucksack|bag/i, '<path d="M40 42V30a20 20 0 0 1 40 0v12" fill="none" stroke="#14304a" stroke-width="7"/><path d="M22 40h76l10 66H12z" fill="#d6338a"/>', 60, 66],
+];
+const PRESENT = ['<rect x="20" y="48" width="80" height="58" rx="8" fill="#1fa58a"/><rect x="14" y="36" width="92" height="20" rx="6" fill="#0f6b5c"/><path d="M60 36v70" stroke="#ffd23f" stroke-width="10"/><path d="M60 34C40 4 18 30 60 36c42-6 20-32 0-2z" fill="none" stroke="#ffd23f" stroke-width="7" stroke-linejoin="round"/>', 60, 72];
+
+// Nur feste Zeichnungen: Der Produktname selbst landet nie im HTML.
+function toy(name) {
+  const hit = TOYS.find(t => t[0].test(name));
+  const [shape, x, y] = hit ? hit.slice(1) : PRESENT;
+  const eye = dx => `<circle cx="${x + dx}" cy="${y}" r="7" fill="#fff" stroke="#172033" stroke-width="2"/>`
+    + `<circle cx="${x + dx + 1}" cy="${y + 1}" r="3.5" fill="#172033"/>`;
+  const coin = (cx, cy) => `<g class="coin"><circle cx="${cx}" cy="${cy}" r="9" fill="#ffd23f" stroke="#b58900" stroke-width="2"/>`
+    + `<text x="${cx}" y="${cy + 4}" text-anchor="middle" font-size="11" font-weight="700" fill="#7a5c00">€</text></g>`;
+  const box = document.createElement("div");
+  box.innerHTML = `<svg class="toy" viewBox="0 0 120 120" aria-hidden="true">`
+    + `<ellipse class="shadow" cx="60" cy="113" rx="40" ry="5" fill="#d5dce5"/>`
+    + `<g class="body">${shape}<g class="eyes" style="transform-origin:${x}px ${y}px">${eye(-11)}${eye(11)}</g>`
+    + `<path d="M${x - 8} ${y + 13}q8 8 16 0" fill="none" stroke="#172033" stroke-width="3" stroke-linecap="round"/></g>`
+    + coin(10, 52) + coin(110, 40) + coin(104, 74) + `</svg>`;
+  return box.firstElementChild;
+}
+
+// Monatsbetrag geteilt durch die Stunden eines durchschnittlichen Monats (52 Wochen / 12).
+const monthlyPay = () => num(state.pay) || total("income");
+function monthlyHours() {
+  const day = num(state.dayHours), week = num(state.weekDays);
+  return day && day <= 24 && week && week <= 7 ? day * week * 52 / 12 : 0;
+}
+const hourlyWage = () => monthlyHours() ? monthlyPay() / monthlyHours() : 0;
+function workTime(hours) {
+  const minutes = Math.max(1, Math.round(hours * 60));
+  const h = Math.floor(minutes / 60), m = minutes % 60;
+  return [h ? `${h.toLocaleString("de-DE")} Std.` : "", m ? `${m} Min.` : ""].filter(Boolean).join(" ");
+}
+function workDays(hours) {
+  const days = hours / (num(state.dayHours) || 8);
+  return days >= 1 ? `Das sind etwa ${days.toLocaleString("de-DE", { maximumFractionDigits: 1 })} Arbeitstage.` : "";
+}
+function countdown(ms) {
+  const s = Math.max(0, Math.ceil(ms / 1000));
+  const d = Math.floor(s / 86400), h = Math.floor(s % 86400 / 3600), m = Math.floor(s % 3600 / 60);
+  return [d ? `${d} T` : "", d || h ? `${h} Std` : "", d || h || m ? `${m} Min` : "", `${s % 60} Sek`]
+    .filter(Boolean).join(" ");
+}
+const due = item => item.status === "wait" && Number(item.until) <= Date.now();
+const postponed = new Set();   // „Später“ gilt bis zum nächsten Start
+
+// Auswahl, wie lange man bei Unsicherheit wartet.
+const WAITS = { hours: "so viele Stunden, wie ich dafür arbeite",
+  workdays: "so viele Tage, wie ich dafür arbeiten müsste", day: "24 Stunden", three: "3 Tage", week: "7 Tage" };
+function waitFor(item) {
+  const hours = num(item.hours);
+  if (state.waitMode === "day") return [24 * 36e5, "24 Stunden"];
+  if (state.waitMode === "three") return [3 * 864e5, "3 Tage"];
+  if (state.waitMode === "week") return [7 * 864e5, "7 Tage"];
+  if (state.waitMode === "workdays") {
+    const days = Math.max(1, Math.ceil(hours / (num(state.dayHours) || 8)));
+    return [days * 864e5, days === 1 ? "1 Tag" : `${days} Tage`];
+  }
+  return [Math.max(1 / 60, hours) * 36e5, workTime(hours)];
+}
+$("waitMode").replaceChildren(...Object.entries(WAITS).map(([value, textContent]) =>
+  el("option", { value, textContent })));
+$("waitMode").addEventListener("change", e => { state.waitMode = e.target.value; save(); });
+
+function decide(item, choice) {
+  if (choice === "wait") allowNotify();
+  postponed.delete(item.id);   // nach neuer Wartezeit wieder fragen
+  item.status = choice;
+  item.until = choice === "wait" ? String(Date.now() + waitFor(item)[0]) : "";
+  save(); $("ask").close(); renderItems();
+  if (choice === "skip") celebrate("Zeit gespart!",
+    `Du behältst ${euro(num(item.price))} – das sind ${workTime(num(item.hours))} deiner Arbeit.`, true);
+  else toast(choice === "buy" ? "Deine Entscheidung: kaufen" : "Wartezeit läuft");
+}
+
+function askAbout(item, again) {
+  const hours = num(item.hours);
+  const button = (text, choice, primary) => {
+    const b = el("button", { type: "button", textContent: text, className: primary ? "primary" : "" });
+    b.addEventListener("click", () => decide(item, choice));
+    return b;
+  };
+  const later = el("button", { type: "button", textContent: "Später", className: "del" });
+  later.addEventListener("click", () => { postponed.add(item.id); $("ask").close(); renderItems(); });
+  $("askBody").replaceChildren(
+    el("div", { className: "stage" }, toy(item.name)),
+    el("h2", { id: "askTitle", textContent: again ? "Willst du es immer noch?" : "Ist das Produkt die Zeit wert?" }),
+    el("p", { textContent: `${item.name} · ${euro(num(item.price))}` }),
+    el("p", { className: "time", textContent: workTime(hours) }),
+    el("p", { className: "hint", textContent: `So lange arbeitest du dafür. ${workDays(hours)}` }),
+    el("div", { className: "answers" },
+      button(again ? "Ja, ich kaufe es trotzdem" : "Ja, das ist es mir wert", "buy", true),
+      button("Nein, ich kaufe es nicht", "skip"),
+      button(`${again ? "Noch unsicher" : "Ich bin unsicher"} – ${waitFor(item)[1]} warten`, "wait"), later));
+  if (!$("ask").open) $("ask").showModal();
+}
+
+function itemCard(item) {
+  const hours = num(item.hours);
+  const info = el("div", {}, el("h3", { textContent: item.name }),
+    el("p", { className: "info", textContent: `${euro(num(item.price))} · ${workTime(hours)} Arbeit` }));
+  const actions = el("div", { className: "actions", style: "margin-top:8px" });
+  const action = (text, run, className = "") => {
+    const b = el("button", { type: "button", textContent: text, className });
+    b.addEventListener("click", run); actions.append(b);
+  };
+  if (item.status === "buy") info.append(el("span", { className: "badge", textContent: "Du kaufst es" }));
+  else if (item.status === "skip") info.append(el("span", { className: "badge warn", textContent: "Nicht gekauft" }));
+  else if (due(item)) {
+    info.append(el("span", { className: "badge bad", textContent: "Wartezeit vorbei" }));
+    action("Jetzt entscheiden", () => askAbout(item, true), "primary");
+  } else if (item.status === "wait") {
+    const clock = el("span", { className: "badge", textContent: "Noch " + countdown(Number(item.until) - Date.now()) });
+    clock.dataset.until = item.until;
+    info.append(clock);
+    action("Kalender-Erinnerung", () => saveReminder(item));
+  } else action("Entscheiden", () => askAbout(item, false), "primary");
+  action("Entfernen", () => { state.items.splice(state.items.indexOf(item), 1); save(); renderItems(); }, "del");
+  info.append(actions);
+  return el("section", { className: "card item" }, toy(item.name), info);
+}
+
+function renderWage() {
+  const wage = hourlyWage(), hours = monthlyHours();
+  $("pay").placeholder = total("income") ? `aus Einnahmen: ${euro(total("income"))}` : "z. B. 1.800 €";
+  $("wageResult").textContent = wage ? `${euro(wage)} pro Stunde` : "";
+  const tooMuch = num(state.dayHours) > 24 || num(state.weekDays) > 7;
+  $("wageInfo").textContent = tooMuch ? "Höchstens 24 Stunden pro Tag und 7 Tage pro Woche."
+    : wage ? `Das sind rund ${hours.toLocaleString("de-DE", { maximumFractionDigits: 1 })} `
+      + `Arbeitsstunden im Monat${num(state.pay) ? "" : ", gerechnet mit deinen eingetragenen Einnahmen"}.`
+    : "Fülle die Felder aus, dann erscheint hier dein Stundenlohn.";
+}
+// Noch nicht entschiedene Produkte folgen dem aktuellen Stundenlohn.
+function refreshHours() {
+  const wage = hourlyWage();
+  if (!wage) return;
+  for (const item of state.items)
+    if (item.status === "open" || item.status === "wait") item.hours = String(num(item.price) / wage);
+}
+function renderItems() {
+  renderWage();
+  const skipped = state.items.filter(i => i.status === "skip");
+  $("savedTime").hidden = !skipped.length;
+  $("savedTime").textContent = skipped.length ? `Nicht gekauft: ${euro(skipped.reduce((s, i) => s + num(i.price), 0))} `
+    + `und ${workTime(skipped.reduce((s, i) => s + num(i.hours), 0))} Arbeit gespart.` : "";
+  $("itemList").replaceChildren(...[...state.items].reverse().map(itemCard));
+}
+$("itemForm").addEventListener("submit", event => {
+  event.preventDefault();
+  const name = $("iName").value.trim(), price = num($("iPrice").value), wage = hourlyWage();
+  if (!name || !price) { $("itemStatus").textContent = "Bitte Produkt und Preis eintragen."; return; }
+  if (!wage) {
+    $("itemStatus").textContent = "Fülle zuerst oben den Stundenlohn-Umrechner aus.";
+    $(!monthlyPay() ? "pay" : !num(state.dayHours) ? "dayHours" : "weekDays").focus(); return;
+  }
+  const item = { id: newId(), name, price: asText(price), hours: String(price / wage), status: "open", until: "" };
+  state.items.push(item); save(); $("itemForm").reset(); $("itemStatus").textContent = "";
+  renderItems(); askAbout(item, false);
+});
+for (const key of ["pay", "dayHours", "weekDays"]) $(key).addEventListener("input", e => {
+  state[key] = e.target.value; refreshHours(); save(); renderItems();
+});
+
+// ---------- Benachrichtigung und Kalender ----------
+const canNotify = () => "Notification" in window;
+function renderNotify() {
+  const permission = canNotify() ? Notification.permission : "unsupported";
+  $("notifyState").textContent = {
+    granted: "Benachrichtigungen sind an. Sie kommen, solange die App offen ist oder im Hintergrund läuft.",
+    denied: "Benachrichtigungen sind blockiert. Du kannst sie in den Browser- oder Geräte-Einstellungen erlauben.",
+    default: "Benachrichtigungen sind noch nicht erlaubt.",
+    unsupported: "Dieses Gerät unterstützt hier keine Benachrichtigungen. Nutze die Kalender-Erinnerung."
+  }[permission];
+  $("notifyOn").hidden = permission !== "default";
+  $("notifyTest").hidden = permission !== "granted";
+}
+async function allowNotify() {
+  if (canNotify() && Notification.permission === "default") {
+    try { await Notification.requestPermission(); } catch { /* bleibt ungefragt */ }
+  }
+  renderNotify();
+}
+// Auf dem Handy geht das nur über den Service Worker, als Datei nur direkt.
+async function sendNotification(title, body, id) {
+  if (!canNotify() || Notification.permission !== "granted") return false;
+  const options = { body, tag: id, data: { id }, icon: "icon-192.png", requireInteraction: true };
+  try {
+    const worker = await navigator.serviceWorker?.getRegistration();
+    if (worker?.active) await worker.showNotification(title, options);
+    else {
+      const note = new Notification(title, options);
+      note.onclick = () => { window.focus(); openFromNotification(id); note.close(); };
+    }
+    return true;
+  } catch { return false; }
+}
+function openFromNotification(id) {
+  if (locked()) return;
+  const item = state.items.find(i => i.id === id);
+  if (!item || item.status !== "wait") return;
+  document.querySelectorAll("dialog[open]").forEach(d => d.close());
+  show("worth"); postponed.add(item.id); askAbout(item, due(item));
+}
+function notifyDue() {
+  for (const item of state.items.filter(i => due(i) && i.notified !== i.until)) {
+    item.notified = item.until;   // je Wartezeit nur einmal melden
+    save();
+    sendNotification("Willst du es noch kaufen?",
+      `Die Wartezeit für „${item.name}“ (${euro(num(item.price))}) ist um. Kaufen oder lieber nicht?`, item.id);
+  }
+}
+const icsTime = ms => new Date(ms).toISOString().replace(/[-:]/g, "").replace(/\.\d{3}/, "");
+const icsText = text => text.replace(/[\\;,]/g, "\\$&").replace(/\r?\n/g, " ");
+function calendarFile(item) {
+  const end = Number(item.until);
+  return ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//Haushaltsplan//DE", "BEGIN:VEVENT",
+    `UID:${item.id}-${item.until}@haushaltsplan`, `DTSTAMP:${icsTime(Date.now())}`,
+    `DTSTART:${icsTime(end)}`, `DTEND:${icsTime(end + 15 * 60000)}`,
+    `SUMMARY:${icsText(`Noch kaufen? ${item.name}`)}`,
+    `DESCRIPTION:${icsText(`Deine Wartezeit ist um. Öffne Life Control und entscheide: ${item.name}, ${euro(num(item.price))}.`)}`,
+    "BEGIN:VALARM", "TRIGGER:PT0M", "ACTION:DISPLAY", `DESCRIPTION:${icsText(`Noch kaufen? ${item.name}`)}`,
+    "END:VALARM", "END:VEVENT", "END:VCALENDAR", ""].join("\r\n");
+}
+function saveReminder(item) {
+  const url = URL.createObjectURL(new Blob([calendarFile(item)], { type: "text/calendar" }));
+  el("a", { href: url, download: "erinnerung.ics" }).click();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+  toast("Datei öffnen, um sie einzutragen");
+}
+$("notifyOn").addEventListener("click", allowNotify);
+$("notifyTest").addEventListener("click", async () => {
+  if (!await sendNotification("Life Control", "So sieht deine Erinnerung aus.", "probe"))
+    toast("Benachrichtigung nicht möglich");
+});
+navigator.serviceWorker?.addEventListener("message", event => openFromNotification(event.data?.ask));
+
+// ---------- Nächster Schritt, Level, Fokus ----------
+// Immer genau eine Aufgabe zeigen: die wichtigste zuerst.
+function openFold(id) {
+  show("settings");
+  const fold = $(id).closest("details");
+  fold.open = true;
+  fold.scrollIntoView({ block: "start" });
+}
+const backupDue = () => {
+  const last = state.backupAt || state.since;
+  return !demo && !fileActive && last > 0 && Date.now() - last > 30 * 864e5;
+};
+function nextStep() {
+  const waiting = state.items.find(due);
+  if (waiting) return [`Wartezeit vorbei: ${waiting.name}`, "Jetzt entscheiden", () => openFromNotification(waiting.id)];
+  if (backupDue()) return ["Zeit für eine Sicherung", "Sicherung speichern", () => $("export").click()];
+  if (!total("income")) return ["Trag deine Einnahmen ein", "Einnahmen eintragen", () => openFold("income")];
+  if (!state.goals.some(g => num(g.target))) return ["Lege dein erstes Sparziel an", "Ziel anlegen", () => openFold("goals")];
+  const now = new Date(), month = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+  if (!state.months.some(m => m.month === month)) return [`Trag den ${monthName(month)} ein`, "Monat eintragen", () => {
+    if (state.focus) setSwitch("focus", false);
+    $("monthForm").scrollIntoView({ block: "center" }); $("mSpent").focus({ preventScroll: true });
+  }];
+  if (!hourlyWage()) return ["Wie viel verdienst du pro Stunde?", "Ausrechnen", () => { show("worth"); $("dayHours").focus(); }];
+  return ["Alles erledigt. Stark!", "Einen Wunsch prüfen", () => { show("worth"); $("iName").focus(); }];
+}
+// Punkte gibt es nur dazu, nie Abzug.
+function points() {
+  return state.months.length * 50 + state.items.filter(i => i.status === "skip").length * 30
+    + state.goals.filter(g => num(g.target) && !goalInfo(g).open).length * 100
+    + (total("income") ? 20 : 0) + (state.goals.length ? 20 : 0);
+}
+let shownStep = null;
+function renderNext() {
+  const [title, label, run] = nextStep(), score = points();
+  $("nextTitle").textContent = title; $("nextButton").textContent = label;
+  $("nextButton").onclick = run;
+  if (shownStep !== null && shownStep !== title) {   // neue Aufgabe kurz hervorheben
+    $("nextCard").classList.remove("enter"); void $("nextCard").offsetWidth; $("nextCard").classList.add("enter");
+  }
+  shownStep = title;
+  $("backupInfo").textContent = state.backupAt
+    ? `Letzte Sicherung: ${new Date(state.backupAt).toLocaleDateString("de-DE")}.`
+    : "Noch keine Sicherung gespeichert. Einmal im Monat erinnert dich die App daran.";
+  $("levelText").textContent = `Level ${Math.floor(score / 100) + 1} · noch ${100 - score % 100} Punkte bis zum nächsten`;
+  grow($("levelBar"), score % 100);
+}
+function applyFocus() {
+  document.documentElement.toggleAttribute("data-focus", state.focus);
+  document.documentElement.toggleAttribute("data-calm", state.calm);
+  $("focusOff").hidden = $("startCard").hidden = !state.focus;
+  $("focus").checked = state.focus; $("calm").checked = state.calm;
+}
+function setSwitch(key, value) { state[key] = value; save(); applyFocus(); }
+for (const key of ["focus", "calm"]) $(key).addEventListener("change", e => setSwitch(key, e.target.checked));
+$("focusOff").addEventListener("click", () => setSwitch("focus", false));
+// Einstellungen einklappen: immer nur ein Bereich offen, weniger auf einmal.
+for (const section of document.querySelectorAll("#settings section.card:not(#installCard)")) {
+  const heading = section.querySelector("h2");
+  const body = el("div", { className: "fold-body" }, ...[...section.childNodes].filter(n => n !== heading));
+  const fold = el("details", { className: section.className + " fold", name: "settings" },
+    el("summary", {}, heading), body);
+  fold.addEventListener("toggle", () => {
+    if (fold.open) for (const other of document.querySelectorAll("details.fold"))
+      if (other !== fold) other.open = false;
+  });
+  section.replaceWith(fold);
+}
+
+// Einstellungen in drei Gruppen, die Geldangaben zuerst.
+const GROUPS = [["Mein Geld", ["Über mich", "Sparziele", "Monatliche Einnahmen", "Fixkosten pro Monat", "Was ich habe",
+    "Was ich vorhabe"]],
+  ["Design", ["Aussehen", "Fokus und Ruhe", "Startseite anordnen"]],
+  ["App", ["Erinnerungen", "Speichern", "Lizenz und Copyright"]]];
+for (const [title, names] of GROUPS) {
+  $("settings").append(el("h3", { className: "group", textContent: title }));
+  if (title === "App") $("settings").append($("installCard"));
+  for (const name of names) {
+    const fold = [...document.querySelectorAll("details.fold")]
+      .find(f => f.querySelector("h2").textContent === name);
+    if (fold) $("settings").append(fold);
+  }
+}
+
+// ---------- Menü-Symbole ----------
+const ICONS = { today: '<path d="M3 11l9-8 9 8M5 10v10h14V10"/>',
+  plan: '<rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18M8 3v4M16 3v4"/>',
+  way: '<path d="M4 20l6-6 4 3 6-9M15 8h5v5"/>',
+  sport: '<path d="M3 10v4M6 7v10M18 7v10M21 10v4M6 12h12"/>',
+  home: '<circle cx="12" cy="12" r="9"/><path d="M15 8.5a4.5 4.5 0 1 0 0 7M6.5 11h6M6.5 14h6"/>',
+  stats: '<path d="M4 20V10M12 20V4M20 20v-7"/>',
+  worth: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+  settings: '<path d="M4 6h9M17 6h3M4 12h3M11 12h9M4 18h11M19 18h1"/><circle cx="15" cy="6" r="2"/><circle cx="9" cy="12" r="2"/><circle cx="17" cy="18" r="2"/>' };
+for (const button of document.querySelectorAll("nav button")) {
+  const label = el("span", { textContent: button.textContent });
+  const holder = document.createElement("span");
+  holder.innerHTML = `<svg viewBox="0 0 24 24" aria-hidden="true">${ICONS[button.dataset.view]}</svg>`;
+  button.replaceChildren(holder.firstElementChild, label);
+}
+
+// ---------- Demo vor dem Kauf ----------
+// Beispieldaten, nichts wird gespeichert, endet nach fünf Minuten.
+let demo = false;
+function startDemo() {
+  demo = true; fileActive = false;
+  const now = new Date();
+  const month = back => { const d = new Date(now.getFullYear(), now.getMonth() - back, 1);
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`; };
+  const target = new Date(now.getFullYear(), now.getMonth() + 6, 1);
+  state = clean({ name: "Demo", occupation: "employee", home: "rent", pay: "1800", dayHours: "8", weekDays: "5",
+    income: [{ name: "Lohn", amount: "1800" }], costs: [{ name: "Miete", amount: "650" }, { name: "Handy", amount: "40" }],
+    assets: [{ name: "Konto", amount: "900" }],
+    goals: [{ id: "demo", name: "Urlaub", target: "1200", saved: "650",
+      month: `${target.getFullYear()}-${String(target.getMonth() + 1).padStart(2, "0")}` }],
+    months: [[3, "900", "100"], [2, "1100", "60"], [1, "850", "200"]]
+      .map(([back, spent, saved]) => ({ month: month(back), spent, saved })) });
+  document.documentElement.removeAttribute("data-locked");
+  $("lock").hidden = true; $("demoBar").hidden = false;
+  for (const id of ["export", "import", "print", "reset", "link"]) $(id).disabled = true;
+  drawAll(); alltag.demo(); show("today");
+  setTimeout(() => location.reload(), 5 * 60000);
+}
+$("demoStart").addEventListener("click", startDemo);
+$("demoEnd").addEventListener("click", () => location.reload());
+
+// Profil in den Einstellungen ändern und passende Kostenzeilen ergänzen.
+function renderProfile() {
+  $("occupation").value = state.occupation; $("home-type").value = state.home;
+  const names = costFields(state.occupation, state.home).slice(0, 4).map(f => f[1].replace(/ \(.*\)$/, ""));
+  $("costHint").textContent = `Zum Beispiel: ${names.join(", ")}. Jährliche Kosten durch 12 teilen.`;
+}
+for (const [id, key, options] of [["occupation", "occupation", OCCUPATIONS], ["home-type", "home", HOMES]]) {
+  $(id).replaceChildren(el("option", { value: "", textContent: "Bitte wählen" }),
+    ...Object.entries(options).map(([value, o]) => el("option", { value, textContent: o.label })));
+  $(id).addEventListener("change", e => { state[key] = e.target.value; save(); renderProfile(); });
+}
+$("suggestCosts").addEventListener("click", () => {
+  const known = new Set(state.costs.map(c => c.name));
+  const fresh = costFields(state.occupation, state.home)
+    .map(f => f[1].replace(/ \(.*\)$/, "")).filter(name => !known.has(name));
+  state.costs.push(...fresh.map(name => ({ name, amount: "" })));
+  save(); draw("costs");
+  toast(fresh.length ? `${fresh.length} Posten ergänzt – Beträge eintragen` : "Alle passenden Posten sind schon da");
+});
+
+// Jede Sekunde: Restzeit anzeigen und nach Ablauf erneut fragen.
+function checkWaiting() {
+  if (locked()) return;
+  notifyDue();            // auch wenn die App im Hintergrund ist
+  if (document.hidden) return;
+  let finished = false;
+  for (const clock of document.querySelectorAll("[data-until]")) {
+    const rest = Number(clock.dataset.until) - Date.now();
+    if (rest <= 0) finished = true; else clock.textContent = "Noch " + countdown(rest);
+  }
+  if (finished) { renderItems(); renderNext(); }
+  if (document.querySelector("dialog[open]")) return;
+  const next = state.items.find(i => due(i) && !postponed.has(i.id));
+  if (next) { postponed.add(next.id); askAbout(next, true); }
+}
+setInterval(checkWaiting, 1000);
+
+// ---------- Einstellungen ----------
+function input(item, key, props) {
+  const node = el("input", { ...props, value: item[key] });
+  node.addEventListener("input", () => { item[key] = node.value; save(); updateTotals(); });
+  return node;
+}
+const money = (item, key, label) =>
+  input(item, key, { inputMode: "decimal", placeholder: "0 €", ariaLabel: label, className: "money" });
+function removeButton(list, index) {
+  const b = el("button", { className: "del", textContent: "✕", ariaLabel: "Eintrag entfernen" });
+  b.addEventListener("click", () => { state[list].splice(index, 1); save(); draw(list); });
+  return b;
+}
+function draw(list) {
+  const box = $(list);
+  box.replaceChildren();
+  if (!state[list].length) box.append(empty("Noch nichts eingetragen."));
+  state[list].forEach((item, i) => {
+    const name = input(item, "name", { placeholder: "Bezeichnung", ariaLabel: "Bezeichnung", className: "text" });
+    if (list === "goals") {
+      box.append(el("div", { className: "box" },
+        el("div", { className: "row", style: "grid-template-columns:1fr auto" }, name, removeButton(list, i)),
+        el("div", { className: "grid" }, field("Zielbetrag", money(item, "target", "Zielbetrag")),
+          field("Schon gespart", money(item, "saved", "Schon gespart")),
+          field("Zielmonat", input(item, "month", { type: "month" })))));
+    } else if (list === "plans") {
+      const row = el("div", { className: "row plan" + (item.done ? " done" : "") });
+      const check = el("input", { type: "checkbox", checked: item.done, ariaLabel: "Erledigt" });
+      check.addEventListener("change", () => {
+        item.done = check.checked; row.classList.toggle("done", item.done); save(); updateTotals();
+        if (item.done) toast("Erledigt – stark!");
+      });
+      row.append(check, name, money(item, "amount", "Kosten"), removeButton(list, i));
+      box.append(row);
+    } else box.append(el("div", { className: "row" }, name, money(item, "amount", "Betrag"), removeButton(list, i)));
+  });
+  updateTotals();
+}
+function updateTotals() {
+  $("tIncome").textContent = "Summe: " + euro(total("income"));
+  $("tCosts").textContent = "Summe: " + euro(total("costs"));
+  $("tAssets").textContent = "Summe: " + euro(total("assets"));
+  $("tPlans").textContent = "Offene Vorhaben: " + euro(
+    state.plans.filter(p => !p.done).reduce((t, p) => t + num(p.amount), 0));
+  renderHero();
+}
+function drawAll() {
+  applyLook(); applyFocus(); renderLook(); renderProfile(); applyOrder(); renderOrder(); renderNotify();
+  $("name").value = state.name; $("mainGoal").value = state.mainGoal;
+  ["income", "costs", "assets", "goals", "plans"].forEach(draw);
+  for (const key of ["pay", "dayHours", "weekDays", "waitMode"]) $(key).value = state[key];
+  renderHome(); renderItems();
+}
+function show(view) {
+  document.documentElement.dataset.view = view;
+  const money = ["home", "stats", "worth"].includes(view);
+  $("subnav").hidden = !money;
+  for (const b of $("subnav").children) b.setAttribute("aria-pressed", b.dataset.sub === view);
+  for (const main of document.querySelectorAll("main.view")) main.hidden = main.id !== view;
+  for (const button of document.querySelectorAll("nav button"))
+    button.toggleAttribute("aria-current", false);
+  document.querySelector(`nav [data-view=${money ? "home" : view}]`).setAttribute("aria-current", "page");
+  alltag.open(["today", "plan", "way", "sport"].includes(view) ? view : view === "settings" ? "me" : null);
+  if (view === "home") renderHome();
+  if (view === "stats") renderStats();
+  if (view === "worth") { refreshHours(); renderItems(); }
+  if (view === "settings") renderNotify();
+  renderHero(); scrollTo(0, 0);
+  if (state.style === "spiel") document.querySelector("meta[name=theme-color]").content =
+    getComputedStyle(document.documentElement).getPropertyValue("--soft").trim();
+}
+document.querySelectorAll("nav button").forEach(b => b.addEventListener("click", () => show(b.dataset.view)));
+for (const key of ["name", "mainGoal"]) $(key).addEventListener("input", e => {
+  state[key] = e.target.value; save(); renderHero();
+});
+document.querySelectorAll("[data-add]").forEach(button => button.addEventListener("click", () => {
+  const list = button.dataset.add;
+  state[list].push(clean({ [list]: [{}] })[list][0]);
+  save(); draw(list);
+  $(list).lastElementChild.classList.add("enter");
+  $(list).lastElementChild.querySelector(".text").focus();
+  toast("Hinzugefügt");
+}));
+$("link").addEventListener("click", async () => {
+  try {
+    if (fileHandle && !fileActive && await fileHandle.requestPermission({ mode: "readwrite" }) === "granted") {
+      await connect(fileHandle); return;
+    }
+    await connect(await showSaveFilePicker({ suggestedName: "life-control.json",
+      types: [{ description: "Life Control", accept: { "application/json": [".json"] } }] }));
+  } catch (error) {
+    if (error.name === "AbortError") return;
+    fileHandle = null; fileActive = false;
+    showSaveState("Diese Datei ließ sich nicht verwenden. Klick erneut und wähle eine andere.");
+  }
+});
+$("export").addEventListener("click", () => {
+  const url = URL.createObjectURL(new Blob([JSON.stringify({ ...state, alltag: alltag.dump() }, null, 2)], { type: "application/json" }));
+  el("a", { href: url, download: "life-control-sicherung.json" }).click();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+  state.backupAt = Date.now(); save();
+  if (!locked()) renderHome();
+});
+$("import").addEventListener("click", () => $("file").click());
+$("file").addEventListener("change", async e => {
+  const file = e.target.files[0];
+  e.target.value = "";
+  if (!file) return;
+  try {
+    const data = JSON.parse(await file.text());
+    if (!LISTS.some(l => Array.isArray(data?.[l]))) throw new Error("kein Plan");
+    if (!confirm("Den aktuellen Plan durch die Sicherung ersetzen?")) return;
+    state = clean(data); alltag.load(data.alltag); save(); drawAll(); $("status").textContent = "Sicherung geladen.";
+  } catch { $("status").textContent = "Diese Datei ist keine gültige Sicherung."; }
+});
+$("print").addEventListener("click", () => print());
+$("reset").addEventListener("click", () => {
+  if (!confirm("Wirklich alle Einträge löschen?")) return;
+  state = clean(null); alltag.reset(); save(); drawAll();
+  alltag.ensure(); show("today");
+});
+window.addEventListener("beforeunload", event => { if (unsaved) event.preventDefault(); });
+
+// ---------- Fragen-Assistent ----------
+let steps = [], position = 0, answers = {};
+function ask(key, label, props = {}) {
+  const node = el("input", { value: answers[key] || "", ...props });
+  node.addEventListener("input", () => { answers[key] = node.value; });
+  return field(label, node);
+}
+const amountField = (key, label) => ask(key, label, { inputMode: "decimal", placeholder: "0 €" });
+// Antworten aus dem Assistenten haben Vorrang vor dem gespeicherten Profil.
+const who = () => answers.occupation || state.occupation;
+const where = () => answers.home || state.home;
+function pick(key, options) {
+  const box = el("div", { className: "choices tall" });
+  for (const [value, option] of Object.entries(options)) {
+    const button = el("button", { type: "button", textContent: option.label });
+    button.setAttribute("aria-pressed", (answers[key] || state[key]) === value);
+    button.addEventListener("click", () => {
+      answers[key] = value;
+      for (const b of box.children) b.setAttribute("aria-pressed", b === button);
+    });
+    box.append(button);
+  }
+  return [box];
+}
+function buildSteps() {
+  const list = [];
+  if (!state.name) list.push({ title: "Wie heißt du?", hint: "Nur für die Begrüßung.",
+    body: () => [ask("name", "Vorname", { maxLength: 40 })] });
+  if (!state.occupation) list.push({ title: "Was machst du gerade?",
+    hint: "Damit die nächsten Fragen zu dir passen.", body: () => pick("occupation", OCCUPATIONS) });
+  if (!state.home) list.push({ title: "Wie wohnst du?", hint: "Je nachdem frage ich andere Kosten ab.",
+    body: () => pick("home", HOMES) });
+  if (!state.mainGoal) list.push({ title: "Was möchtest du erreichen?", hint: "Ein Satz genügt.",
+    body: () => [ask("mainGoal", "Mein Ziel", { placeholder: "z. B. entspannt durch den Monat kommen" })] });
+  if (!state.income.length) list.push({ title: "Wie viel bekommst du pro Monat?",
+    get hint() { return `${OCCUPATIONS[who()]?.income || "Alles, was regelmäßig reinkommt"}.`; },
+    body: () => [amountField("income", "Einnahmen pro Monat")] });
+  if (!monthlyHours()) list.push({
+    skip: () => OCCUPATIONS[who()]?.job === false,
+    get title() { return OCCUPATIONS[who()]?.job === "optional" ? "Hast du einen Job?" : "Wie viel arbeitest du?"; },
+    get hint() { return OCCUPATIONS[who()]?.job === "optional"
+      ? "Falls ja, trag deine Zeiten ein. Sonst lass die Felder leer."
+      : "Damit rechnet der Zeit-Check deinen Stundenlohn aus. Du kannst das auch leer lassen."; },
+    body: () => [ask("dayHours", "Arbeitsstunden pro Tag", { inputMode: "decimal", placeholder: "z. B. 8" }),
+      ask("weekDays", "Arbeitstage pro Woche", { inputMode: "decimal", placeholder: "z. B. 5" })] });
+  if (!state.costs.length) list.push({ title: "Was zahlst du jeden Monat?",
+    hint: "Was nicht auf dich zutrifft, lässt du einfach leer.",
+    body: () => costFields(who(), where()).map(([k, l]) => amountField(`cost-${k}`, l)) });
+  if (!state.assets.length) list.push({ title: "Wie viel hast du schon?", hint: "Konto, Bargeld, Erspartes.",
+    body: () => [amountField("assets", "Aktuell vorhanden")] });
+  list.push({ title: "Worauf möchtest du sparen?", hint: "Wähle etwas aus oder schreib dein eigenes Ziel.",
+    body: () => {
+      const name = ask("goal", "Sparziel");
+      const choices = el("div", { className: "choices" });
+      for (const option of (OCCUPATIONS[who()] || OCCUPATIONS.other).goals) {
+        const button = el("button", { type: "button", textContent: option });
+        button.setAttribute("aria-pressed", answers.goal === option);
+        button.addEventListener("click", () => {
+          answers.goal = name.querySelector("input").value = option;
+          for (const b of choices.children) b.setAttribute("aria-pressed", b === button);
+        });
+        choices.append(button);
+      }
+      return [choices, name, amountField("target", "Wie viel brauchst du?"),
+        amountField("goalSaved", "Wie viel hast du dafür schon?"), ask("month", "Bis wann?", { type: "month" })];
+    } });
+  return list;
+}
+// Überspringt Fragen, die zur Antwort nicht passen.
+function move(direction) {
+  do { position += direction; } while (steps[position]?.skip?.() && position > 0);
+}
+function showStep(back) {
+  const done = position >= steps.length;
+  const box = el("div", { className: "step" + (back ? " back" : "") });
+  $("quizBar").style.width = (done ? 100 : position / steps.length * 100) + "%";
+  if (done) {
+    const free = freeMoney(), rates = monthlyRates();
+    const mark = $("party").querySelector("svg").cloneNode(true);
+    const value = el("p", { className: "result" + (free < 0 ? " bad" : "") });
+    box.classList.add("center");
+    box.append(mark, el("h2", { id: "quizTitle", textContent: "Dein Plan steht" }),
+      el("p", { className: "hint", textContent: free < 0 ? "So viel fehlt dir pro Monat:" : "So viel bleibt dir pro Monat frei:" }),
+      value, el("p", { className: "hint", textContent: rates
+        ? `Darin ist deine Sparrate von ${euro(rates)} schon abgezogen.`
+        : "Mit Zielbetrag und Zielmonat berechne ich auch deine Sparrate." }));
+    $("quizStep").replaceChildren(box);
+    countTo(value, Math.abs(free));
+  } else {
+    const step = steps[position];
+    box.append(el("h2", { id: "quizTitle", textContent: step.title }),
+      el("p", { className: "hint", textContent: step.hint }), ...step.body());
+    $("quizStep").replaceChildren(box);
+    box.querySelector("input")?.focus({ preventScroll: true });
+  }
+  $("quizBack").hidden = done || position === 0;
+  $("quizClose").hidden = done;
+  $("quizNext").textContent = done ? "Zum Plan" : position === steps.length - 1 ? "Fertig" : "Weiter";
+}
+function applyAnswers() {
+  const value = key => (answers[key] || "").trim();
+  if (value("name")) state.name = value("name");
+  if (value("mainGoal")) state.mainGoal = value("mainGoal");
+  if (num(value("dayHours")) <= 24 && num(value("dayHours"))) state.dayHours = value("dayHours");
+  if (num(value("weekDays")) <= 7 && num(value("weekDays"))) state.weekDays = value("weekDays");
+  const add = (list, name, key) => { if (num(value(key))) state[list].push({ name, amount: value(key) }); };
+  add("income", "Einnahmen", "income");
+  if (answers.occupation) state.occupation = answers.occupation;
+  if (answers.home) state.home = answers.home;
+  for (const [key, label] of costFields(state.occupation, state.home))
+    add("costs", label.replace(/ \(.*\)$/, ""), `cost-${key}`);
+  add("assets", "Vorhanden", "assets");
+  if (value("goal") || num(value("target")))
+    state.goals.push({ id: newId(), name: value("goal") || "Sparziel", target: value("target"),
+      saved: value("goalSaved"), month: value("month") });
+  save(); drawAll();
+}
+function openQuiz() { steps = buildSteps(); position = 0; answers = {}; showStep(); $("quiz").showModal(); }
+$("quizClose").addEventListener("click", () => $("quiz").close());
+$("quizBack").addEventListener("click", () => { move(-1); showStep(true); });
+$("quizForm").addEventListener("submit", event => {
+  event.preventDefault();
+  if (position >= steps.length) { $("quiz").close(); return; }
+  move(1);
+  if (position === steps.length) applyAnswers();
+  showStep();
+});
+
+// ---------- App auf dem Handy ----------
+const installed = matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
+if (location.protocol.startsWith("http")) {
+  document.head.append(el("link", { rel: "manifest", href: "manifest.webmanifest" }));
+  navigator.serviceWorker?.register("sw.js").catch(() => {});
+  navigator.storage?.persist?.();
+  if (!installed && /iphone|ipad|ipod/i.test(navigator.userAgent)) {
+    $("installCard").hidden = false;
+    $("installHint").textContent = "In Safari unten auf „Teilen“ tippen und dann „Zum Home-Bildschirm“ wählen.";
+  }
+  let promptEvent = null;
+  const ready = () => { $("guideInstall").hidden = !promptEvent; };
+  addEventListener("beforeinstallprompt", event => {
+    event.preventDefault(); promptEvent = event;
+    $("installCard").hidden = false; $("install").hidden = false;
+    $("installHint").textContent = "Mit eigenem Symbol, auch ohne Internet nutzbar.";
+    ready();
+  });
+  $("guideInstall").addEventListener("click", async () => {
+    await promptEvent?.prompt(); $("installGuide").close();
+  });
+  $("install").addEventListener("click", async () => { await promptEvent?.prompt(); $("installCard").hidden = true; });
+  addEventListener("appinstalled", () => { $("installCard").hidden = true; $("installGuide").close(); });
+}
+
+const today = new Date();
+$("mMonth").value = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}`;
+for (const b of $("subnav").children) b.addEventListener("click", () => show(b.dataset.sub));
+$("settings").prepend(el("div", { className: "banner" },
+    el("span", { className: "ic" }, document.querySelector("nav [data-view=settings] svg")?.cloneNode(true) || ""),
+    el("div", {}, el("h1", { textContent: "Mehr" }), el("p", { className: "sub", textContent: "Einstellungen, Design und Sicherung." }))),
+  el("h3", { className: "group", textContent: "Alltag" }), el("div", { id: "alltag-me", className: "alltag" }));
+const alltag = createAlltag({
+  show, locked, demo: () => demo, touch: () => save(),
+  profile: () => ({ name: state.name, occupation: state.occupation, dayHours: num(state.dayHours), weekDays: num(state.weekDays) }),
+  moneyStep() {
+    const [title, label, run] = nextStep();
+    if (title.startsWith("Alles erledigt")) return null;
+    return [title, label, () => { show("home"); run(); }];
+  },
+  // Geldtermine für den Kalender: Wartezeiten, Zielmonate und der Monatseintrag am Monatsende.
+  dates() {
+    const key = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+    const open = run => () => { show("home"); run?.(); };
+    const list = state.items.filter(i => i.status === "wait" && Number(i.until)).map(i => {
+      const d = new Date(Number(i.until));
+      return { view: "home", kind: "Wartezeit vorbei – entscheiden", title: i.name, day: key(d), due: due(i),
+        time: d.toTimeString().slice(0, 5), run: () => { show("worth"); if (due(i)) askAbout(i, false); } };
+    });
+    for (const g of state.goals) {
+      if (!/^\d{4}-\d{2}$/.test(g.month) || !goalInfo(g).open) continue;
+      const [y, m] = g.month.split("-").map(Number);
+      list.push({ view: "home", kind: "Sparziel fällig", title: g.name, day: key(new Date(y, m, 0)), run: open() });
+    }
+    const now = new Date();
+    for (let i = 0; i < 12; i++) {
+      const end = new Date(now.getFullYear(), now.getMonth() + i + 1, 0), month = key(end).slice(0, 7);
+      if (!state.months.some(x => x.month === month)) list.push({ view: "home", kind: "Geld", title: "Monat eintragen",
+        day: key(end), month: true, run: open() });
+    }
+    return list;
+  },
+  addGoal(name, price, have) {
+    if (state.goals.some(g => g.name === name)) { toast("Dieses Sparziel gibt es schon"); return; }
+    state.goals.push({ id: newId(), name, target: String(price || ""), saved: String(have || ""), month: "" });
+    save(); drawAll(); toast("Sparziel angelegt");
+  },
+});
+$("quiz").addEventListener("close", () => { if (!locked()) { alltag.ensure(); show("today"); } });
+drawAll();
+show("today");
+setupFileSaving();
+// Reihenfolge beim ersten Öffnen: auf dem Handy zuerst installieren, dann die Fragen.
+// (Auf dem iPhone hat die installierte App einen eigenen Speicher.)
+const flag = name => { try { return !!localStorage.getItem(`${KEY}-${name}`); } catch { return false; } };
+const setFlag = name => { try { localStorage.setItem(`${KEY}-${name}`, "1"); } catch { /* ohne Speicher */ } };
+// Die Fragen erscheinen nur beim allerersten Öffnen. Der Merker steht getrennt vom
+// Plan, damit "Später" keine vorhandene Speicherdatei als veraltet erscheinen lässt.
+function firstQuestions() {
+  requireLicence(() => {
+    if (!state.savedAt && !flag("seen")) openQuiz();
+    setFlag("seen");
+    if (!$("quiz").open) { alltag.ensure(); show("today"); }
+    if (location.hash.startsWith("#frage=")) {   // über eine Benachrichtigung geöffnet
+      openFromNotification(location.hash.slice(7));
+      history.replaceState(null, "", location.pathname + location.search);
+    }
+  });
+}
+const apple = /iphone|ipad|ipod/i.test(navigator.userAgent);
+const phone = apple || /android/i.test(navigator.userAgent);
+if (phone && !installed && location.protocol.startsWith("http") && !flag("install")) {
+  const steps = apple
+    ? ["Öffne diese Seite in Safari.", "Tippe auf das Teilen-Symbol (Quadrat mit Pfeil nach oben).",
+       "Wähle „Zum Home-Bildschirm“ und dann „Hinzufügen“."]
+    : ["Öffne diese Seite in Chrome.", "Tippe auf „Jetzt installieren“ – oder oben auf das Menü ⋮.",
+       "Wähle „App installieren“ bzw. „Zum Startbildschirm hinzufügen“."];
+  $("guideIcon").src = "icon-192.png";
+  $("guideSteps").replaceChildren(...steps.map(t => el("li", {}, el("span", { textContent: t }))));
+  $("guideSkip").addEventListener("click", () => $("installGuide").close());
+  $("installGuide").addEventListener("close", () => { setFlag("install"); firstQuestions(); }, { once: true });
+  $("installGuide").showModal();
+} else firstQuestions();
+</script>
+</body>
+</html>
