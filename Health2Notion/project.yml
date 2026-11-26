@@ -1,0 +1,29 @@
+name: Health2Notion
+options:
+  bundleIdPrefix: com.example
+  deploymentTarget:
+    iOS: "17.0"
+targets:
+  Health2Notion:
+    type: application
+    platform: iOS
+    sources: [Health2Notion]
+    info:
+      path: Health2Notion/Info.plist
+      properties:
+        CFBundleDisplayName: Health 2 Notion
+        UILaunchScreen: {}
+        NSHealthShareUsageDescription: "Die App liest deine Gesundheitsdaten (Schritte, Schlaf, Puls, Gewicht, Workouts) und schreibt sie in deine Notion-Datenbank."
+        UIBackgroundModes: [fetch, processing]
+        BGTaskSchedulerPermittedIdentifiers: [com.example.health2notion.refresh]
+    entitlements:
+      path: Health2Notion/Health2Notion.entitlements
+      properties:
+        com.apple.developer.healthkit: true
+        com.apple.developer.healthkit.access: []
+        com.apple.developer.healthkit.background-delivery: true
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.example.health2notion
+        SWIFT_VERSION: "5.9"
+        GENERATE_INFOPLIST_FILE: NO
